@@ -39,6 +39,7 @@ public class ForgeSkinPort
 
         DefaultSkinProvider()
         {
+            System.out.println("[SKINPORT]: ForgeSkinPort DefaultSkinProvider");
             try
             {
                 byte[] data;
@@ -55,6 +56,7 @@ public class ForgeSkinPort
         @Override
         public ISkin getSkin(IPlayerProfile profile)
         {
+            System.out.println("[SKINPORT]: ForgeSkinPort getSkin");
             UUID uuid;
             if ((uuid = profile.getPlayerID()) != null && (uuid.hashCode() & 0x1) == 1)
                 return DefaultAlex;

@@ -43,6 +43,7 @@ public class SkinData implements ISkin
     }
 
     public static String getSkinType(MinecraftProfileTexture tex) {
+        System.out.println("[SKINPORT]: SkinData getSkinType");
         String model = tex.getMetadata("model");
         if(model == null) {
             return "default";

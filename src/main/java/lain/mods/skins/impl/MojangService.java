@@ -30,6 +30,7 @@ public class MojangService
         @Override
         public Optional<GameProfile> load(GameProfile key) throws Exception
         {
+            System.out.println("[SKINPORT]: MojangService load");
             if (key.getId() == null || key.getProperties() == null || key == Shared.DUMMY) // bad profile
                 return Optional.empty();
             if (key.isComplete() && !key.getProperties().isEmpty()) // already filled
@@ -47,6 +48,7 @@ public class MojangService
         @Override
         public ListenableFuture<Optional<GameProfile>> reload(GameProfile key, Optional<GameProfile> oldValue) throws Exception
         {
+            System.out.println("[SKINPORT]: MojangService reload");
             if (oldValue.isPresent()) // good result, doesn't need refresh.
                 return Futures.immediateFuture(oldValue);
             return Shared.submitTask(() -> {

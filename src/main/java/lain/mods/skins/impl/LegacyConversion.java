@@ -41,6 +41,7 @@ public class LegacyConversion
 
     public BufferedImage convert(BufferedImage image)
     {
+        System.out.println("[SKINPORT]: BufferedImage start");
         if (image == null)
             return null;
 
@@ -54,9 +55,10 @@ public class LegacyConversion
         g.drawImage(image, 0, 0, null);
 
         boolean legacy = image.getWidth() == image.getHeight() * 2;
-
+        System.out.println("[SKINPORT]: BufferedImage");
         if (legacy)
         {
+            System.out.println("[SKINPORT]: Legacy BufferedImage");
             g.setColor(new Color(0, 0, 0, 0));
             g.fillRect(0 * r, 32 * r, 64 * r, 32 * r);
             g.drawImage(i, 24 * r, 48 * r, 20 * r, 52 * r, 4 * r, 16 * r, 8 * r, 20 * r, null);
@@ -88,6 +90,7 @@ public class LegacyConversion
 
     private void setAreaOpaque(int x, int y, int width, int height)
     {
+        System.out.println("[SKINPORT]: BufferedImage setAreaOpaque");
         for (int i = x; i < width; ++i)
         {
             for (int j = y; j < height; ++j)
@@ -99,6 +102,7 @@ public class LegacyConversion
 
     private void setAreaTransparent(int x, int y, int width, int height)
     {
+        System.out.println("[SKINPORT]: BufferedImage setAreaTransparent");
         for (int i = x; i < width; ++i)
         {
             for (int j = y; j < height; ++j)

@@ -210,8 +210,11 @@ public class ClientProxy extends CommonProxy
                     SkinProviderAPI.SKIN.getSkin(PlayerProfile.wrapGameProfile(player.getGameProfile()));
                     SkinProviderAPI.CAPE.getSkin(PlayerProfile.wrapGameProfile(player.getGameProfile()));
                 }
-                if (TileEntityRendererDispatcher.instance.getSpecialRendererByClass(TileEntitySkull.class).getClass() != TileEntitySkullRenderer.class) // Aggressively restore vanilla TileEntitySkullRenderer
+                if (TileEntityRendererDispatcher.instance.getSpecialRendererByClass(TileEntitySkull.class).getClass() != TileEntitySkullRenderer.class) {               // Aggressively restore vanilla TileEntitySkullRenderer
+                    System.out.println("[SKINPORT]: Aggressively restore vanilla TileEntitySkullRender");
                     ClientRegistry.bindTileEntitySpecialRenderer(TileEntitySkull.class, new TileEntitySkullRenderer());
+                }
+
             }
         }
     }

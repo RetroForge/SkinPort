@@ -22,6 +22,7 @@ public class MojangCapeProvider implements ISkinProvider
     @Override
     public ISkin getSkin(IPlayerProfile profile)
     {
+        System.out.println("[SKINPORT]: MojangCapeProvider getSkin");
         SkinData skin = new SkinData();
         if (_filter != null)
             skin.setSkinFilter(_filter);
