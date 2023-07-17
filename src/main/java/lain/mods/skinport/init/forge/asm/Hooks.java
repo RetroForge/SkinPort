@@ -1,8 +1,10 @@
 package lain.mods.skinport.init.forge.asm;
 
+import java.awt.image.BufferedImage;
 import java.util.List;
 import com.mojang.authlib.GameProfile;
 import lain.mods.skinport.init.forge.ClientProxy;
+import lain.mods.skins.impl.LegacyConversion;
 import net.minecraft.client.entity.AbstractClientPlayer;
 import net.minecraft.client.entity.EntityClientPlayerMP;
 import net.minecraft.client.entity.EntityOtherPlayerMP;
@@ -15,6 +17,8 @@ import net.minecraft.client.renderer.entity.Render;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.ResourceLocation;
+
+import javax.imageio.ImageIO;
 
 public class Hooks
 {
@@ -71,6 +75,13 @@ public class Hooks
     public static int ModelBiped_initWidth(ModelBiped model, int textureWidth)
     {
         return ClientProxy.initWidth(model, textureWidth);
+    }
+
+    public static BufferedImage convertOldSkin(BufferedImage image) {
+        if(image == null) {
+            return null;
+        }
+        return new LegacyConversion().convert(image);
     }
 
     public static Render RenderManager_getEntityRenderObject(RenderManager manager, Entity entity, Render result)

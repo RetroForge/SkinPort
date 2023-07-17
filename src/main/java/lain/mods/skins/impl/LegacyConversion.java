@@ -5,8 +5,11 @@ import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 import java.io.ByteArrayOutputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.nio.file.Paths;
 import java.util.function.Function;
 import javax.imageio.ImageIO;
 
@@ -77,11 +80,11 @@ public class LegacyConversion
 
         imageData = ((DataBufferInt) i.getRaster().getDataBuffer()).getData();
 
-        setAreaOpaque(0 * r, 0 * r, 32 * r, 16 * r);
+        //setAreaOpaque(0 * r, 0 * r, 32 * r, 16 * r);
         if (legacy)
             setAreaTransparent(32 * r, 0 * r, 64 * r, 32 * r);
-        setAreaOpaque(0 * r, 16 * r, 64 * r, 32 * r);
-        setAreaOpaque(16 * r, 48 * r, 48 * r, 64 * r);
+        //setAreaOpaque(0 * r, 16 * r, 64 * r, 32 * r);
+        //setAreaOpaque(16 * r, 48 * r, 48 * r, 64 * r);
 
         return i;
     }

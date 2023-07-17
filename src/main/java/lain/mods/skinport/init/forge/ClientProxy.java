@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.WeakHashMap;
 import com.mojang.authlib.GameProfile;
+import com.mojang.authlib.minecraft.MinecraftProfileTexture;
 import cpw.mods.fml.client.FMLClientHandler;
 import cpw.mods.fml.client.registry.ClientRegistry;
 import cpw.mods.fml.common.Loader;
@@ -27,6 +28,7 @@ import lain.mods.skins.api.SkinProviderAPI;
 import lain.mods.skins.api.interfaces.ISkin;
 import lain.mods.skins.impl.PlayerProfile;
 import lain.mods.skins.impl.forge.CustomSkinTexture;
+import lain.mods.skins.impl.forge.MinecraftUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.AbstractClientPlayer;
 import net.minecraft.client.gui.GuiButton;
@@ -54,13 +56,10 @@ public class ClientProxy extends CommonProxy
 
     public static ResourceLocation bindTexture(GameProfile profile, ResourceLocation result)
     {
-        if (profile != null)
-        {
-            ISkin skin = SkinProviderAPI.SKIN.getSkin(PlayerProfile.wrapGameProfile(profile));
-            if (skin != null && skin.isDataReady())
-                return ClientProxy.getOrCreateTexture(skin.getData(), skin).getLocation();
+        if(result != null && !result.getResourcePath().equals("textures/entity/steve.png")) {
+            return result;
         }
-        return null;
+        return DefaultSkins.INSTANCE.get(profile).getLocation();
     }
 
     public static ResourceLocation generateRandomLocation()
@@ -70,26 +69,23 @@ public class ClientProxy extends CommonProxy
 
     public static ModelSkeletonHead getHumanoidHead(ResourceLocation location, ModelSkeletonHead result)
     {
-        ITextureObject texture = FMLClientHandler.instance().getClient().getTextureManager().getTexture(location);
-        if (texture instanceof CustomSkinTexture)
-            return modelHumanoidHead;
-        return null;
+        //ITextureObject texture = FMLClientHandler.instance().getClient().getTextureManager().getTexture(location);
+        //if (texture instanceof CustomSkinTexture)
+        //    return modelHumanoidHead;
+        return modelHumanoidHead;
     }
 
     public static ResourceLocation getLocationCape(AbstractClientPlayer player, ResourceLocation result)
     {
-        ISkin skin = SkinProviderAPI.CAPE.getSkin(PlayerProfile.wrapGameProfile(player.getGameProfile()));
-        if (skin != null && skin.isDataReady())
-            return ClientProxy.getOrCreateTexture(skin.getData(), skin).getLocation();
-        return null;
+        return result;
     }
 
     public static ResourceLocation getLocationSkin(AbstractClientPlayer player, ResourceLocation result)
     {
-        ISkin skin = SkinProviderAPI.SKIN.getSkin(PlayerProfile.wrapGameProfile(player.getGameProfile()));
-        if (skin != null && skin.isDataReady())
-            return ClientProxy.getOrCreateTexture(skin.getData(), skin).getLocation();
-        return null;
+        if(result != null && !result.getResourcePath().equals("textures/entity/steve.png")) {
+            return result;
+        }
+        return DefaultSkins.INSTANCE.get(player.getGameProfile()).getLocation();
     }
 
     public static CustomSkinTexture getOrCreateTexture(ByteBuffer data, ISkin skin)
@@ -129,14 +125,20 @@ public class ClientProxy extends CommonProxy
 
     public static String getSkinType(AbstractClientPlayer player)
     {
-        ResourceLocation location = getLocationSkin(player, null);
-        if (location != null)
-        {
-            ISkin skin = SkinProviderAPI.SKIN.getSkin(PlayerProfile.wrapGameProfile(player.getGameProfile()));
-            if (skin != null && skin.isDataReady())
-                return skin.getSkinType();
+        GameProfile profile = player.getGameProfile();
+        if(!profile.isComplete()) {
+            return (player.getUniqueID().hashCode() & 1) == 0 ? "default" : "slim";
         }
-        return "default";
+        Map<MinecraftProfileTexture.Type, MinecraftProfileTexture> textures = MinecraftUtils.getSessionService().getTextures(profile, false);
+        MinecraftProfileTexture texture = textures.get(MinecraftProfileTexture.Type.SKIN);
+        if(texture == null) {
+            return (player.getUniqueID().hashCode() & 1) == 0 ? "default" : "slim";
+        }
+        String model = texture.getMetadata("model");
+        if(model == null) {
+            return "default";
+        }
+        return model;
     }
 
     public static boolean hasCape(AbstractClientPlayer player, boolean result)
@@ -207,8 +209,8 @@ public class ClientProxy extends CommonProxy
                 for (Object obj : world.playerEntities)
                 {
                     EntityPlayer player = (EntityPlayer) obj;
-                    SkinProviderAPI.SKIN.getSkin(PlayerProfile.wrapGameProfile(player.getGameProfile()));
-                    SkinProviderAPI.CAPE.getSkin(PlayerProfile.wrapGameProfile(player.getGameProfile()));
+                    //SkinProviderAPI.SKIN.getSkin(PlayerProfile.wrapGameProfile(player.getGameProfile()));
+                    //SkinProviderAPI.CAPE.getSkin(PlayerProfile.wrapGameProfile(player.getGameProfile()));
                 }
                 if (TileEntityRendererDispatcher.instance.getSpecialRendererByClass(TileEntitySkull.class).getClass() != TileEntitySkullRenderer.class) // Aggressively restore vanilla TileEntitySkullRenderer
                     ClientRegistry.bindTileEntitySpecialRenderer(TileEntitySkull.class, new TileEntitySkullRenderer());

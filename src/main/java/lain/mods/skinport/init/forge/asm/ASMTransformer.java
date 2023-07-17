@@ -240,6 +240,35 @@ public class ASMTransformer implements IClassTransformer
 
     }
 
+    class transformer00X extends ClassVisitor {
+        class method001 extends MethodVisitor {
+
+            public method001(MethodVisitor mv) {
+                super(Opcodes.ASM5, mv);
+            }
+
+            @Override
+            public void visitInsn(int opcode) {
+                super.visitVarInsn(Opcodes.ALOAD, 1);
+                super.visitMethodInsn(Opcodes.INVOKESTATIC, "lain/mods/skinport/init/forge/asm/Hooks", "convertOldSkin", "(Ljava/awt/image/BufferedImage;)Ljava/awt/image/BufferedImage;", false);
+                super.visitInsn(Opcodes.ARETURN);
+            }
+        }
+
+        ObfHelper m001 = ObfHelper.newMethod("a", "net/minecraft.client.renderer.ImageBufferDownload", "(Ljava.awt.image.BufferedImage;)Ljava.awt.image.BufferedImage;").setDevName("parseUserSkin");
+
+        public transformer00X(ClassVisitor cv) {
+            super(Opcodes.ASM5, cv);
+        }
+
+        @Override
+        public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
+            if (name.equals("a") && desc.equals("(Ljava/awt/image/BufferedImage;)Ljava/awt/image/BufferedImage;"))
+                return new method001(super.visitMethod(access, name, desc, signature, exceptions));
+            return super.visitMethod(access, name, desc, signature, exceptions);
+        }
+    }
+
     class transformer004 extends ClassVisitor
     {
 
@@ -368,6 +397,8 @@ public class ASMTransformer implements IClassTransformer
     {
         if ("net.minecraft.client.entity.AbstractClientPlayer".equals(transformedName))
             return transform001(bytes);
+        if("net.minecraft.client.renderer.ImageBufferDownload".equals(transformedName))
+            return transform00X(bytes);
         if ("net.minecraft.client.renderer.tileentity.TileEntitySkullRenderer".equals(transformedName))
             return transform002(bytes);
         if ("net.minecraft.client.renderer.entity.RenderManager".equals(transformedName))
@@ -384,6 +415,14 @@ public class ASMTransformer implements IClassTransformer
         ClassReader classReader = new ClassReader(bytes);
         ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_MAXS);
         classReader.accept(new transformer001(classWriter), ClassReader.EXPAND_FRAMES);
+        return classWriter.toByteArray();
+    }
+
+    private byte[] transform00X(byte[] bytes)
+    {
+        ClassReader classReader = new ClassReader(bytes);
+        ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+        classReader.accept(new transformer00X(classWriter), ClassReader.EXPAND_FRAMES);
         return classWriter.toByteArray();
     }
 

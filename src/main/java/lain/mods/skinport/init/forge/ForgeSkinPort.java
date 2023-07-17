@@ -55,9 +55,13 @@ public class ForgeSkinPort
         @Override
         public ISkin getSkin(IPlayerProfile profile)
         {
+            if(profile == null) {
+                return DefaultSteve;
+            }
             UUID uuid;
-            if ((uuid = profile.getPlayerID()) != null && (uuid.hashCode() & 0x1) == 1)
+            if ((uuid = profile.getPlayerID()) != null && (uuid.hashCode() & 0x1) == 1) {
                 return DefaultAlex;
+            }
             return DefaultSteve;
         }
 
@@ -107,12 +111,13 @@ public class ForgeSkinPort
     {
         if (event.getSide().isClient())
         {
+            DefaultSkins.INSTANCE = new DefaultSkins();
             loadOptions();
             SkinProviderAPI.SKIN.clearProviders();
-            SkinProviderAPI.SKIN.registerProvider(new MojangSkinProvider().withFilter(LegacyConversion.createFilter()));
+            //SkinProviderAPI.SKIN.registerProvider(new MojangSkinProvider().withFilter(LegacyConversion.createFilter()));
             SkinProviderAPI.SKIN.registerProvider(new DefaultSkinProvider());
             SkinProviderAPI.CAPE.clearProviders();
-            SkinProviderAPI.CAPE.registerProvider(new MojangCapeProvider());
+            //SkinProviderAPI.CAPE.registerProvider(new MojangCapeProvider());
         }
 
         network.registerPacket(1, PacketGet0.class);
