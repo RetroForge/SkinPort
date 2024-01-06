@@ -6,6 +6,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.WeakHashMap;
+import java.util.concurrent.ExecutionException;
+
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.minecraft.MinecraftProfileTexture;
 import cpw.mods.fml.client.FMLClientHandler;
@@ -53,6 +57,9 @@ public class ClientProxy extends CommonProxy
     private static final Map<String, Render> renderers = new HashMap<>();
     private static final Map<ByteBuffer, CustomSkinTexture> textures = new WeakHashMap<>();
     private static final SkinPortModelHumanoidHead modelHumanoidHead = new SkinPortModelHumanoidHead();
+    private static Cache<GameProfile, String> modelCache = CacheBuilder.newBuilder()
+            .concurrencyLevel(2)
+            .build();
 
     public static ResourceLocation bindTexture(GameProfile profile, ResourceLocation result)
     {
@@ -129,10 +136,23 @@ public class ClientProxy extends CommonProxy
         if(!profile.isComplete()) {
             return (player.getUniqueID().hashCode() & 1) == 0 ? "default" : "slim";
         }
+        String type;
+        try {
+            type = modelCache.get(profile, () -> getSkinType(profile));
+        } catch (ExecutionException e) {
+            throw new RuntimeException(e);
+        }
+        if(type.isEmpty()) {
+            return (player.getUniqueID().hashCode() & 1) == 0 ? "default" : "slim";
+        }
+        return type;
+    }
+
+    private static String getSkinType(GameProfile profile) {
         Map<MinecraftProfileTexture.Type, MinecraftProfileTexture> textures = MinecraftUtils.getSessionService().getTextures(profile, false);
         MinecraftProfileTexture texture = textures.get(MinecraftProfileTexture.Type.SKIN);
         if(texture == null) {
-            return (player.getUniqueID().hashCode() & 1) == 0 ? "default" : "slim";
+            return "";
         }
         String model = texture.getMetadata("model");
         if(model == null) {

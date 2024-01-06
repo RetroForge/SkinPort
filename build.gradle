@@ -7,7 +7,7 @@ buildscript {
         }
         maven {
             name = "forge"
-            url = "http://files.minecraftforge.net/maven"
+            url = "https://files.minecraftforge.net/maven"
         }
     }
     dependencies {
@@ -25,7 +25,7 @@ apply plugin: 'forge'
 
 [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
 
-version = "1.7.10-v11"
+version = "1.7.10-v13"
 group= "lain.mods.skinport"
 archivesBaseName = "SkinPort"
 
