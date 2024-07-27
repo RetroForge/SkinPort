@@ -13,9 +13,19 @@ import java.util.function.Function;
 
 import javax.imageio.ImageIO;
 
+import com.mojang.authlib.minecraft.MinecraftProfileTexture;
+
 import lain.mods.skins.api.interfaces.ISkin;
 
 public class SkinData implements ISkin {
+
+    public static String getSkinType(MinecraftProfileTexture tex) {
+        String model = tex.getMetadata("model");
+        if (model == null) {
+            return "default";
+        }
+        return model;
+    }
 
     public static String judgeSkinType(byte[] data) {
         try (InputStream input = new ByteArrayInputStream(data)) {
