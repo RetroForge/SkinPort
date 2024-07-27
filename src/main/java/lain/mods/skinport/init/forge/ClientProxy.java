@@ -7,6 +7,9 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.WeakHashMap;
 
+import cpw.mods.fml.common.Loader;
+import lain.mods.skinport.impl.forge.compat.SkinPortRenderPlayer_MPM;
+import lain.mods.skinport.impl.forge.compat.SkinPortRenderPlayer_RPA;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.AbstractClientPlayer;
 import net.minecraft.client.gui.GuiButton;
@@ -174,8 +177,21 @@ public class ClientProxy extends CommonProxy {
     }
 
     public static void setupRenderers(RenderManager manager) {
-        renderers.put("default", new SkinPortRenderPlayer(manager, false));
-        renderers.put("slim", new SkinPortRenderPlayer(manager, true));
+        if (Loader.isModLoaded("moreplayermodels")) // Compatibility with MorePlayerModels
+        {
+            renderers.put("default", new SkinPortRenderPlayer_MPM(manager, false));
+            renderers.put("slim", new SkinPortRenderPlayer_MPM(manager, true));
+        }
+        else if (Loader.isModLoaded("RenderPlayerAPI")) // Compatibility with RenderPlayerAPI
+        {
+            renderers.put("default", new SkinPortRenderPlayer_RPA(manager, false));
+            renderers.put("slim", new SkinPortRenderPlayer_RPA(manager, true));
+        }
+        else
+        {
+            renderers.put("default", new SkinPortRenderPlayer(manager, false));
+            renderers.put("slim", new SkinPortRenderPlayer(manager, true));
+        }
     }
 
     @SubscribeEvent

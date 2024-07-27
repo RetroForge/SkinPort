@@ -1,5 +1,8 @@
 // Add any additional repositories for your dependencies here.
 
 repositories {
-
+    maven {
+        name "GTNH Maven Releases"
+        url "https://nexus.gtnewhorizons.com/repository/releases/"
+    }
 }
