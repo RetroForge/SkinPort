@@ -7,31 +7,23 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-public final class Retries
-{
+public final class Retries {
 
     @FunctionalInterface
-    public interface ThrowingAccept<T>
-    {
+    public interface ThrowingAccept<T> {
 
         void accept(T t) throws Throwable;
 
-        default Consumer<T> toConsumer()
-        {
+        default Consumer<T> toConsumer() {
             return toConsumer(Retries::rethrow);
         }
 
-        default Consumer<T> toConsumer(Consumer<Throwable> handler)
-        {
+        default Consumer<T> toConsumer(Consumer<Throwable> handler) {
             return t -> {
-                try
-                {
+                try {
                     accept(t);
-                }
-                catch (Throwable throwable)
-                {
-                    if (handler != null)
-                        handler.accept(throwable);
+                } catch (Throwable throwable) {
+                    if (handler != null) handler.accept(throwable);
                 }
             };
         }
@@ -39,27 +31,20 @@ public final class Retries
     }
 
     @FunctionalInterface
-    public interface ThrowingApply<T, R>
-    {
+    public interface ThrowingApply<T, R> {
 
         R apply(T t) throws Throwable;
 
-        default Function<T, R> toFunction()
-        {
+        default Function<T, R> toFunction() {
             return toFunction(Retries::rethrow);
         }
 
-        default Function<T, R> toFunction(Consumer<Throwable> handler)
-        {
+        default Function<T, R> toFunction(Consumer<Throwable> handler) {
             return t -> {
-                try
-                {
+                try {
                     return apply(t);
-                }
-                catch (Throwable throwable)
-                {
-                    if (handler != null)
-                        handler.accept(throwable);
+                } catch (Throwable throwable) {
+                    if (handler != null) handler.accept(throwable);
                     return null;
                 }
             };
@@ -68,27 +53,20 @@ public final class Retries
     }
 
     @FunctionalInterface
-    public interface ThrowingGet<T>
-    {
+    public interface ThrowingGet<T> {
 
         T get() throws Throwable;
 
-        default Supplier<T> toSupplier()
-        {
+        default Supplier<T> toSupplier() {
             return toSupplier(Retries::rethrow);
         }
 
-        default Supplier<T> toSupplier(Consumer<Throwable> handler)
-        {
+        default Supplier<T> toSupplier(Consumer<Throwable> handler) {
             return () -> {
-                try
-                {
+                try {
                     return get();
-                }
-                catch (Throwable throwable)
-                {
-                    if (handler != null)
-                        handler.accept(throwable);
+                } catch (Throwable throwable) {
+                    if (handler != null) handler.accept(throwable);
                     return null;
                 }
             };
@@ -97,27 +75,20 @@ public final class Retries
     }
 
     @FunctionalInterface
-    public interface ThrowingRun
-    {
+    public interface ThrowingRun {
 
         void run() throws Throwable;
 
-        default Runnable toRunnable()
-        {
+        default Runnable toRunnable() {
             return toRunnable(Retries::rethrow);
         }
 
-        default Runnable toRunnable(Consumer<Throwable> handler)
-        {
+        default Runnable toRunnable(Consumer<Throwable> handler) {
             return () -> {
-                try
-                {
+                try {
                     run();
-                }
-                catch (Throwable throwable)
-                {
-                    if (handler != null)
-                        handler.accept(throwable);
+                } catch (Throwable throwable) {
+                    if (handler != null) handler.accept(throwable);
                 }
             };
         }
@@ -125,27 +96,20 @@ public final class Retries
     }
 
     @FunctionalInterface
-    public interface ThrowingTest<T>
-    {
+    public interface ThrowingTest<T> {
 
         boolean test(T t) throws Throwable;
 
-        default Predicate<T> toPredicate()
-        {
+        default Predicate<T> toPredicate() {
             return toPredicate(Retries::rethrow);
         }
 
-        default Predicate<T> toPredicate(Consumer<Throwable> handler)
-        {
+        default Predicate<T> toPredicate(Consumer<Throwable> handler) {
             return t -> {
-                try
-                {
+                try {
                     return test(t);
-                }
-                catch (Throwable throwable)
-                {
-                    if (handler != null)
-                        handler.accept(throwable);
+                } catch (Throwable throwable) {
+                    if (handler != null) handler.accept(throwable);
                     return false;
                 }
             };
@@ -153,21 +117,14 @@ public final class Retries
 
     }
 
-    public static <T> ThrowingAccept<T> fallback(ThrowingAccept<T> action, ThrowingAccept<T> other)
-    {
+    public static <T> ThrowingAccept<T> fallback(ThrowingAccept<T> action, ThrowingAccept<T> other) {
         return t -> {
-            try
-            {
+            try {
                 action.accept(t);
-            }
-            catch (Throwable throwable)
-            {
-                try
-                {
+            } catch (Throwable throwable) {
+                try {
                     other.accept(t);
-                }
-                catch (Throwable otherThrowable)
-                {
+                } catch (Throwable otherThrowable) {
                     throwable.addSuppressed(otherThrowable);
                     throw throwable;
                 }
@@ -175,21 +132,14 @@ public final class Retries
         };
     }
 
-    public static <T, R> ThrowingApply<T, R> fallback(ThrowingApply<T, R> action, ThrowingApply<T, R> other)
-    {
+    public static <T, R> ThrowingApply<T, R> fallback(ThrowingApply<T, R> action, ThrowingApply<T, R> other) {
         return t -> {
-            try
-            {
+            try {
                 return action.apply(t);
-            }
-            catch (Throwable throwable)
-            {
-                try
-                {
+            } catch (Throwable throwable) {
+                try {
                     return other.apply(t);
-                }
-                catch (Throwable otherThrowable)
-                {
+                } catch (Throwable otherThrowable) {
                     throwable.addSuppressed(otherThrowable);
                     throw throwable;
                 }
@@ -197,21 +147,14 @@ public final class Retries
         };
     }
 
-    public static <T> ThrowingGet<T> fallback(ThrowingGet<T> action, ThrowingGet<T> other)
-    {
+    public static <T> ThrowingGet<T> fallback(ThrowingGet<T> action, ThrowingGet<T> other) {
         return () -> {
-            try
-            {
+            try {
                 return action.get();
-            }
-            catch (Throwable throwable)
-            {
-                try
-                {
+            } catch (Throwable throwable) {
+                try {
                     return other.get();
-                }
-                catch (Throwable otherThrowable)
-                {
+                } catch (Throwable otherThrowable) {
                     throwable.addSuppressed(otherThrowable);
                     throw throwable;
                 }
@@ -219,21 +162,14 @@ public final class Retries
         };
     }
 
-    public static ThrowingRun fallback(ThrowingRun action, ThrowingRun other)
-    {
+    public static ThrowingRun fallback(ThrowingRun action, ThrowingRun other) {
         return () -> {
-            try
-            {
+            try {
                 action.run();
-            }
-            catch (Throwable throwable)
-            {
-                try
-                {
+            } catch (Throwable throwable) {
+                try {
                     other.run();
-                }
-                catch (Throwable otherThrowable)
-                {
+                } catch (Throwable otherThrowable) {
                     throwable.addSuppressed(otherThrowable);
                     throw throwable;
                 }
@@ -241,21 +177,14 @@ public final class Retries
         };
     }
 
-    public static <T> ThrowingTest<T> fallback(ThrowingTest<T> action, ThrowingTest<T> other)
-    {
+    public static <T> ThrowingTest<T> fallback(ThrowingTest<T> action, ThrowingTest<T> other) {
         return t -> {
-            try
-            {
+            try {
                 return action.test(t);
-            }
-            catch (Throwable throwable)
-            {
-                try
-                {
+            } catch (Throwable throwable) {
+                try {
                     return other.test(t);
-                }
-                catch (Throwable otherThrowable)
-                {
+                } catch (Throwable otherThrowable) {
                     throwable.addSuppressed(otherThrowable);
                     throw throwable;
                 }
@@ -263,146 +192,117 @@ public final class Retries
         };
     }
 
-    public static <T> T rethrow(Throwable throwable)
-    {
+    public static <T> T rethrow(Throwable throwable) {
         return rethrow0(throwable);
     }
 
     @SuppressWarnings("unchecked")
-    private static <T extends Throwable, R> R rethrow0(Throwable throwable) throws T
-    {
+    private static <T extends Throwable, R> R rethrow0(Throwable throwable) throws T {
         throw (T) throwable;
     }
 
-    public static <T> ThrowingAccept<T> retrying(ThrowingAccept<T> action, Predicate<Throwable> shouldRetry, Consumer<Integer> beforeRetry, int maxRetries)
-    {
+    public static <T> ThrowingAccept<T> retrying(ThrowingAccept<T> action, Predicate<Throwable> shouldRetry,
+        Consumer<Integer> beforeRetry, int maxRetries) {
         AtomicReference<Throwable> thrown = new AtomicReference<>();
         AtomicInteger retries = new AtomicInteger();
         return t -> {
-            while (true)
-            {
-                try
-                {
-                    if (thrown.get() != null && beforeRetry != null)
-                        beforeRetry.accept(retries.get());
+            while (true) {
+                try {
+                    if (thrown.get() != null && beforeRetry != null) beforeRetry.accept(retries.get());
                     action.accept(t);
                     return;
-                }
-                catch (Throwable throwable)
-                {
-                    if (!thrown.compareAndSet(null, throwable))
-                        thrown.get().addSuppressed(throwable);
-                    if ((shouldRetry != null && !shouldRetry.test(throwable)) || retries.getAndIncrement() == maxRetries)
-                        break;
+                } catch (Throwable throwable) {
+                    if (!thrown.compareAndSet(null, throwable)) thrown.get()
+                        .addSuppressed(throwable);
+                    if ((shouldRetry != null && !shouldRetry.test(throwable))
+                        || retries.getAndIncrement() == maxRetries) break;
                 }
             }
             throw thrown.get();
         };
     }
 
-    public static <T, R> ThrowingApply<T, R> retrying(ThrowingApply<T, R> action, Predicate<Throwable> shouldRetry, Consumer<Integer> beforeRetry, int maxRetries)
-    {
+    public static <T, R> ThrowingApply<T, R> retrying(ThrowingApply<T, R> action, Predicate<Throwable> shouldRetry,
+        Consumer<Integer> beforeRetry, int maxRetries) {
         AtomicReference<Throwable> thrown = new AtomicReference<>();
         AtomicInteger retries = new AtomicInteger();
         return t -> {
-            while (true)
-            {
-                try
-                {
-                    if (thrown.get() != null && beforeRetry != null)
-                        beforeRetry.accept(retries.get());
+            while (true) {
+                try {
+                    if (thrown.get() != null && beforeRetry != null) beforeRetry.accept(retries.get());
                     return action.apply(t);
-                }
-                catch (Throwable throwable)
-                {
-                    if (!thrown.compareAndSet(null, throwable))
-                        thrown.get().addSuppressed(throwable);
-                    if ((shouldRetry != null && !shouldRetry.test(throwable)) || retries.getAndIncrement() == maxRetries)
-                        break;
+                } catch (Throwable throwable) {
+                    if (!thrown.compareAndSet(null, throwable)) thrown.get()
+                        .addSuppressed(throwable);
+                    if ((shouldRetry != null && !shouldRetry.test(throwable))
+                        || retries.getAndIncrement() == maxRetries) break;
                 }
             }
             throw thrown.get();
         };
     }
 
-    public static <T> ThrowingGet<T> retrying(ThrowingGet<T> action, Predicate<Throwable> shouldRetry, Consumer<Integer> beforeRetry, int maxRetries)
-    {
+    public static <T> ThrowingGet<T> retrying(ThrowingGet<T> action, Predicate<Throwable> shouldRetry,
+        Consumer<Integer> beforeRetry, int maxRetries) {
         AtomicReference<Throwable> thrown = new AtomicReference<>();
         AtomicInteger retries = new AtomicInteger();
         return () -> {
-            while (true)
-            {
-                try
-                {
-                    if (thrown.get() != null && beforeRetry != null)
-                        beforeRetry.accept(retries.get());
+            while (true) {
+                try {
+                    if (thrown.get() != null && beforeRetry != null) beforeRetry.accept(retries.get());
                     return action.get();
-                }
-                catch (Throwable throwable)
-                {
-                    if (!thrown.compareAndSet(null, throwable))
-                        thrown.get().addSuppressed(throwable);
-                    if ((shouldRetry != null && !shouldRetry.test(throwable)) || retries.getAndIncrement() == maxRetries)
-                        break;
+                } catch (Throwable throwable) {
+                    if (!thrown.compareAndSet(null, throwable)) thrown.get()
+                        .addSuppressed(throwable);
+                    if ((shouldRetry != null && !shouldRetry.test(throwable))
+                        || retries.getAndIncrement() == maxRetries) break;
                 }
             }
             throw thrown.get();
         };
     }
 
-    public static ThrowingRun retrying(ThrowingRun action, Predicate<Throwable> shouldRetry, Consumer<Integer> beforeRetry, int maxRetries)
-    {
+    public static ThrowingRun retrying(ThrowingRun action, Predicate<Throwable> shouldRetry,
+        Consumer<Integer> beforeRetry, int maxRetries) {
         AtomicReference<Throwable> thrown = new AtomicReference<>();
         AtomicInteger retries = new AtomicInteger();
         return () -> {
-            while (true)
-            {
-                try
-                {
-                    if (thrown.get() != null && beforeRetry != null)
-                        beforeRetry.accept(retries.get());
+            while (true) {
+                try {
+                    if (thrown.get() != null && beforeRetry != null) beforeRetry.accept(retries.get());
                     action.run();
                     return;
-                }
-                catch (Throwable throwable)
-                {
-                    if (!thrown.compareAndSet(null, throwable))
-                        thrown.get().addSuppressed(throwable);
-                    if ((shouldRetry != null && !shouldRetry.test(throwable)) || retries.getAndIncrement() == maxRetries)
-                        break;
+                } catch (Throwable throwable) {
+                    if (!thrown.compareAndSet(null, throwable)) thrown.get()
+                        .addSuppressed(throwable);
+                    if ((shouldRetry != null && !shouldRetry.test(throwable))
+                        || retries.getAndIncrement() == maxRetries) break;
                 }
             }
             throw thrown.get();
         };
     }
 
-    public static <T> ThrowingTest<T> retrying(ThrowingTest<T> action, Predicate<Throwable> shouldRetry, Consumer<Integer> beforeRetry, int maxRetries)
-    {
+    public static <T> ThrowingTest<T> retrying(ThrowingTest<T> action, Predicate<Throwable> shouldRetry,
+        Consumer<Integer> beforeRetry, int maxRetries) {
         AtomicReference<Throwable> thrown = new AtomicReference<>();
         AtomicInteger retries = new AtomicInteger();
         return t -> {
-            while (true)
-            {
-                try
-                {
-                    if (thrown.get() != null && beforeRetry != null)
-                        beforeRetry.accept(retries.get());
+            while (true) {
+                try {
+                    if (thrown.get() != null && beforeRetry != null) beforeRetry.accept(retries.get());
                     return action.test(t);
-                }
-                catch (Throwable throwable)
-                {
-                    if (!thrown.compareAndSet(null, throwable))
-                        thrown.get().addSuppressed(throwable);
-                    if ((shouldRetry != null && !shouldRetry.test(throwable)) || retries.getAndIncrement() == maxRetries)
-                        break;
+                } catch (Throwable throwable) {
+                    if (!thrown.compareAndSet(null, throwable)) thrown.get()
+                        .addSuppressed(throwable);
+                    if ((shouldRetry != null && !shouldRetry.test(throwable))
+                        || retries.getAndIncrement() == maxRetries) break;
                 }
             }
             throw thrown.get();
         };
     }
 
-    private Retries()
-    {
-    }
+    private Retries() {}
 
 }

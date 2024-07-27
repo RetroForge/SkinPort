@@ -8,27 +8,23 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.function.Function;
+
 import javax.imageio.ImageIO;
 
-public class LegacyConversion
-{
+public class LegacyConversion {
 
-    public static Function<ByteBuffer, ByteBuffer> createFilter()
-    {
+    public static Function<ByteBuffer, ByteBuffer> createFilter() {
         return data -> {
             ByteBuffer original = data;
-            try (InputStream in = SkinData.wrapByteBufferAsInputStream(data); ByteArrayOutputStream baos = new ByteArrayOutputStream())
-            {
+            try (InputStream in = SkinData.wrapByteBufferAsInputStream(data);
+                ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
                 BufferedImage image = new LegacyConversion().convert(ImageIO.read(in));
-                if (image != null)
-                {
+                if (image != null) {
                     ImageIO.write(image, "png", baos);
                     baos.flush();
                     data = SkinData.toBuffer(baos.toByteArray());
                 }
-            }
-            catch (Throwable t)
-            {
+            } catch (Throwable t) {
                 data = original;
             }
             return data;
@@ -39,10 +35,8 @@ public class LegacyConversion
     private int imageWidth;
     private int imageHeight;
 
-    public BufferedImage convert(BufferedImage image)
-    {
-        if (image == null)
-            return null;
+    public BufferedImage convert(BufferedImage image) {
+        if (image == null) return null;
 
         int r = Math.max(image.getWidth() / 64, 1);
 
@@ -55,8 +49,7 @@ public class LegacyConversion
 
         boolean legacy = image.getWidth() == image.getHeight() * 2;
 
-        if (legacy)
-        {
+        if (legacy) {
             g.setColor(new Color(0, 0, 0, 0));
             g.fillRect(0 * r, 32 * r, 64 * r, 32 * r);
             g.drawImage(i, 24 * r, 48 * r, 20 * r, 52 * r, 4 * r, 16 * r, 8 * r, 20 * r, null);
@@ -75,47 +68,38 @@ public class LegacyConversion
 
         g.dispose();
 
-        imageData = ((DataBufferInt) i.getRaster().getDataBuffer()).getData();
+        imageData = ((DataBufferInt) i.getRaster()
+            .getDataBuffer()).getData();
 
         setAreaOpaque(0 * r, 0 * r, 32 * r, 16 * r);
-        if (legacy)
-            setAreaTransparent(32 * r, 0 * r, 64 * r, 32 * r);
+        if (legacy) setAreaTransparent(32 * r, 0 * r, 64 * r, 32 * r);
         setAreaOpaque(0 * r, 16 * r, 64 * r, 32 * r);
         setAreaOpaque(16 * r, 48 * r, 48 * r, 64 * r);
 
         return i;
     }
 
-    private void setAreaOpaque(int x, int y, int width, int height)
-    {
-        for (int i = x; i < width; ++i)
-        {
-            for (int j = y; j < height; ++j)
-            {
+    private void setAreaOpaque(int x, int y, int width, int height) {
+        for (int i = x; i < width; ++i) {
+            for (int j = y; j < height; ++j) {
                 imageData[i + j * imageWidth] |= -16777216;
             }
         }
     }
 
-    private void setAreaTransparent(int x, int y, int width, int height)
-    {
-        for (int i = x; i < width; ++i)
-        {
-            for (int j = y; j < height; ++j)
-            {
+    private void setAreaTransparent(int x, int y, int width, int height) {
+        for (int i = x; i < width; ++i) {
+            for (int j = y; j < height; ++j) {
                 int k = imageData[i + j * imageWidth];
 
-                if ((k >> 24 & 255) < 128)
-                {
+                if ((k >> 24 & 255) < 128) {
                     return;
                 }
             }
         }
 
-        for (int l = x; l < width; ++l)
-        {
-            for (int i1 = y; i1 < height; ++i1)
-            {
+        for (int l = x; l < width; ++l) {
+            for (int i1 = y; i1 < height; ++i1) {
                 imageData[l + i1 * imageWidth] &= 16777215;
             }
         }

@@ -8,12 +8,15 @@ import java.util.concurrent.TimeUnit;
 public final class SharedPool {
 
     private static final ExecutorService thePool = new ThreadPoolExecutor(
-            2,
-            Math.min(Runtime.getRuntime().availableProcessors() * 4, Short.MAX_VALUE),
-            60L,
-            TimeUnit.SECONDS,
-            new LinkedBlockingQueue<>(),
-            SharedPool::newWorker);
+        2,
+        Math.min(
+            Runtime.getRuntime()
+                .availableProcessors() * 4,
+            Short.MAX_VALUE),
+        60L,
+        TimeUnit.SECONDS,
+        new LinkedBlockingQueue<>(),
+        SharedPool::newWorker);
 
     private SharedPool() {
         throw new Error("NoInstance");
@@ -21,10 +24,8 @@ public final class SharedPool {
 
     private static Thread newWorker(Runnable target) {
         Thread thread = new Thread(target, "SharedPoolWorker");
-        if (!thread.isDaemon())
-            thread.setDaemon(true);
-        if (thread.getPriority() != Thread.NORM_PRIORITY)
-            thread.setPriority(Thread.NORM_PRIORITY);
+        if (!thread.isDaemon()) thread.setDaemon(true);
+        if (thread.getPriority() != Thread.NORM_PRIORITY) thread.setPriority(Thread.NORM_PRIORITY);
         return thread;
     }
 

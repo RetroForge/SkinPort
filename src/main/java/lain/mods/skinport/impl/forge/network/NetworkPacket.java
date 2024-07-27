@@ -1,10 +1,10 @@
 package lain.mods.skinport.impl.forge.network;
 
-import io.netty.buffer.ByteBuf;
 import net.minecraft.entity.player.EntityPlayerMP;
 
-public abstract class NetworkPacket
-{
+import io.netty.buffer.ByteBuf;
+
+public abstract class NetworkPacket {
 
     public abstract void handlePacketClient();
 

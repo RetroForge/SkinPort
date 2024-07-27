@@ -4,12 +4,13 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import cpw.mods.fml.relauncher.Side;
+
 import net.minecraft.util.ChatComponentTranslation;
 import net.minecraft.util.IChatComponent;
 
-public enum SkinCustomization
-{
+import cpw.mods.fml.relauncher.Side;
+
+public enum SkinCustomization {
 
     cape,
     jacket,
@@ -19,62 +20,49 @@ public enum SkinCustomization
     right_pants_leg,
     hat;
 
-    public static class SidedOptionalTupleKeyMap<K, V>
-    {
+    public static class SidedOptionalTupleKeyMap<K, V> {
 
         Map<Side, Map<K, V>> map = new ConcurrentHashMap<>();
 
-        public void clear(Side side)
-        {
+        public void clear(Side side) {
             getMap(side).clear();
         }
 
-        public V get(Side side, K key)
-        {
+        public V get(Side side, K key) {
             return get(side, key, Optional.empty());
         }
 
-        public V get(Side side, K key, Optional<K> key2)
-        {
+        public V get(Side side, K key, Optional<K> key2) {
             Map<K, V> m = getMap(side);
             V v = m.get(key);
-            if (v == null && key2.isPresent())
-                v = m.get(key2.get());
+            if (v == null && key2.isPresent()) v = m.get(key2.get());
             return v;
         }
 
-        private Map<K, V> getMap(Side side)
-        {
-            if (!map.containsKey(side))
-                map.putIfAbsent(side, new ConcurrentHashMap<>());
+        private Map<K, V> getMap(Side side) {
+            if (!map.containsKey(side)) map.putIfAbsent(side, new ConcurrentHashMap<>());
             return map.get(side);
         }
 
-        public V put(Side side, K key, Optional<K> key2, V value)
-        {
+        public V put(Side side, K key, Optional<K> key2, V value) {
             Map<K, V> m = getMap(side);
             V v = m.put(key, value);
-            if (key2.isPresent())
-                m.put(key2.get(), value);
+            if (key2.isPresent()) m.put(key2.get(), value);
             return v;
         }
 
-        public V put(Side side, K key, V value)
-        {
+        public V put(Side side, K key, V value) {
             return put(side, key, Optional.empty(), value);
         }
 
-        public V remove(Side side, K key)
-        {
+        public V remove(Side side, K key) {
             return remove(side, key, Optional.empty());
         }
 
-        public V remove(Side side, K key, Optional<K> key2)
-        {
+        public V remove(Side side, K key, Optional<K> key2) {
             Map<K, V> m = getMap(side);
             V v = m.remove(key);
-            if (key2.isPresent())
-                m.remove(key2.get());
+            if (key2.isPresent()) m.remove(key2.get());
             return v;
         }
 
@@ -85,34 +73,30 @@ public enum SkinCustomization
     public static final SidedOptionalTupleKeyMap<UUID, Integer> Flags = new SidedOptionalTupleKeyMap<>();
     public static int ClientFlags = getDefaultFlags();
 
-    public static boolean contains(int flags, SkinCustomization... parts)
-    {
+    public static boolean contains(int flags, SkinCustomization... parts) {
         return (flags & of(parts)) != 0;
     }
 
-    public static int getDefaultFlags()
-    {
+    public static int getDefaultFlags() {
         return _defaultFlags;
     }
 
-    public static int of(SkinCustomization... parts)
-    {
+    public static int of(SkinCustomization... parts) {
         int flags = 0;
-        for (SkinCustomization part : parts)
-            flags |= part._flag;
+        for (SkinCustomization part : parts) flags |= part._flag;
         return flags;
     }
 
-    private final IChatComponent _displayName = new ChatComponentTranslation("options.modelPart." + name(), new Object[0]);
+    private final IChatComponent _displayName = new ChatComponentTranslation(
+        "options.modelPart." + name(),
+        new Object[0]);
     private final int _flag = (int) Math.pow(2, ordinal());
 
-    public IChatComponent getDisplayName()
-    {
+    public IChatComponent getDisplayName() {
         return _displayName;
     }
 
-    public int getFlag()
-    {
+    public int getFlag() {
         return _flag;
     }
 
