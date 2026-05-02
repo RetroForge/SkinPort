@@ -2,6 +2,12 @@ package lain.mods.skinport.impl.forge.compat;
 
 import java.util.Optional;
 import java.util.UUID;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.entity.AbstractClientPlayer;
+import net.minecraft.client.renderer.entity.RenderManager;
+import net.minecraft.entity.player.EntityPlayer;
+
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import lain.mods.skinport.impl.forge.SkinCustomization;
@@ -9,22 +15,16 @@ import lain.mods.skinport.impl.forge.SpecialRenderer;
 import lain.mods.skinport.impl.forge.network.packet.PacketGet1;
 import lain.mods.skinport.init.forge.ForgeSkinPort;
 import lain.mods.skins.impl.PlayerProfile;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.entity.AbstractClientPlayer;
-import net.minecraft.client.renderer.entity.RenderManager;
-import net.minecraft.entity.player.EntityPlayer;
 import noppes.mpm.client.RenderEvent;
 import noppes.mpm.client.RenderMPM;
 import noppes.mpm.client.model.ModelMPM;
 
 @SideOnly(Side.CLIENT)
-public class SkinPortRenderPlayer_MPM extends RenderMPM implements SpecialRenderer
-{
+public class SkinPortRenderPlayer_MPM extends RenderMPM implements SpecialRenderer {
 
     public SkinPortModelPlayer_MPM modelPlayer;
 
-    public SkinPortRenderPlayer_MPM(RenderManager manager, boolean smallArms)
-    {
+    public SkinPortRenderPlayer_MPM(RenderManager manager, boolean smallArms) {
         super();
 
         setRenderManager(manager);
@@ -37,8 +37,8 @@ public class SkinPortRenderPlayer_MPM extends RenderMPM implements SpecialRender
     }
 
     @Override
-    public void doRender(AbstractClientPlayer p_76986_1_, double p_76986_2_, double p_76986_4_, double p_76986_6_, float p_76986_8_, float p_76986_9_)
-    {
+    public void doRender(AbstractClientPlayer p_76986_1_, double p_76986_2_, double p_76986_4_, double p_76986_6_,
+        float p_76986_8_, float p_76986_9_) {
         boolean smHeadwear = modelPlayer.bipedHeadwear.showModel;
         boolean smLeftLegwear = modelPlayer.bipedLeftLegwear.showModel;
         boolean smRightLegwear = modelPlayer.bipedRightLegwear.showModel;
@@ -50,10 +50,10 @@ public class SkinPortRenderPlayer_MPM extends RenderMPM implements SpecialRender
         int flags = getFlags(p_76986_1_);
         if (modelPlayer.bipedHeadwear.showModel)
             modelPlayer.bipedHeadwear.showModel = SkinCustomization.contains(flags, SkinCustomization.hat);
-        if (modelPlayer.bipedLeftLegwear.showModel)
-            modelPlayer.bipedLeftLegwear.showModel = SkinCustomization.contains(flags, SkinCustomization.left_pants_leg);
-        if (modelPlayer.bipedRightLegwear.showModel)
-            modelPlayer.bipedRightLegwear.showModel = SkinCustomization.contains(flags, SkinCustomization.right_pants_leg);
+        if (modelPlayer.bipedLeftLegwear.showModel) modelPlayer.bipedLeftLegwear.showModel = SkinCustomization
+            .contains(flags, SkinCustomization.left_pants_leg);
+        if (modelPlayer.bipedRightLegwear.showModel) modelPlayer.bipedRightLegwear.showModel = SkinCustomization
+            .contains(flags, SkinCustomization.right_pants_leg);
         if (modelPlayer.bipedLeftArmwear.showModel)
             modelPlayer.bipedLeftArmwear.showModel = SkinCustomization.contains(flags, SkinCustomization.left_sleeve);
         if (modelPlayer.bipedRightArmwear.showModel)
@@ -74,15 +74,14 @@ public class SkinPortRenderPlayer_MPM extends RenderMPM implements SpecialRender
         modelPlayer.bipedCloak.showModel = smCloak;
     }
 
-    private int getFlags(EntityPlayer player)
-    {
-        if (player == Minecraft.getMinecraft().thePlayer)
-            return SkinCustomization.ClientFlags;
+    private int getFlags(EntityPlayer player) {
+        if (player == Minecraft.getMinecraft().thePlayer) return SkinCustomization.ClientFlags;
         UUID uuid = player.getUniqueID();
-        Optional<UUID> uuid2 = Optional.ofNullable(PlayerProfile.wrapGameProfile(player.getGameProfile()).getPlayerID());
+        Optional<UUID> uuid2 = Optional.ofNullable(
+            PlayerProfile.wrapGameProfile(player.getGameProfile())
+                .getPlayerID());
         Integer flags = SkinCustomization.Flags.get(Side.CLIENT, uuid, uuid2);
-        if (flags == null)
-        {
+        if (flags == null) {
             SkinCustomization.Flags.put(Side.CLIENT, uuid, uuid2, flags = SkinCustomization.getDefaultFlags());
             ForgeSkinPort.network.sendToServer(new PacketGet1(uuid));
         }
@@ -90,14 +89,12 @@ public class SkinPortRenderPlayer_MPM extends RenderMPM implements SpecialRender
     }
 
     @Override
-    public void onGetRenderer(RenderManager manager, AbstractClientPlayer player)
-    {
+    public void onGetRenderer(RenderManager manager, AbstractClientPlayer player) {
         RenderEvent.renderer = this;
     }
 
     @Override
-    protected void renderEquippedItems(AbstractClientPlayer p_77029_1_, float p_77029_2_)
-    {
+    protected void renderEquippedItems(AbstractClientPlayer p_77029_1_, float p_77029_2_) {
         boolean smHeadwear = modelPlayer.bipedHeadwear.showModel;
         boolean smLeftLegwear = modelPlayer.bipedLeftLegwear.showModel;
         boolean smRightLegwear = modelPlayer.bipedRightLegwear.showModel;
@@ -109,10 +106,10 @@ public class SkinPortRenderPlayer_MPM extends RenderMPM implements SpecialRender
         int flags = getFlags(p_77029_1_);
         if (modelPlayer.bipedHeadwear.showModel)
             modelPlayer.bipedHeadwear.showModel = SkinCustomization.contains(flags, SkinCustomization.hat);
-        if (modelPlayer.bipedLeftLegwear.showModel)
-            modelPlayer.bipedLeftLegwear.showModel = SkinCustomization.contains(flags, SkinCustomization.left_pants_leg);
-        if (modelPlayer.bipedRightLegwear.showModel)
-            modelPlayer.bipedRightLegwear.showModel = SkinCustomization.contains(flags, SkinCustomization.right_pants_leg);
+        if (modelPlayer.bipedLeftLegwear.showModel) modelPlayer.bipedLeftLegwear.showModel = SkinCustomization
+            .contains(flags, SkinCustomization.left_pants_leg);
+        if (modelPlayer.bipedRightLegwear.showModel) modelPlayer.bipedRightLegwear.showModel = SkinCustomization
+            .contains(flags, SkinCustomization.right_pants_leg);
         if (modelPlayer.bipedLeftArmwear.showModel)
             modelPlayer.bipedLeftArmwear.showModel = SkinCustomization.contains(flags, SkinCustomization.left_sleeve);
         if (modelPlayer.bipedRightArmwear.showModel)
@@ -134,8 +131,7 @@ public class SkinPortRenderPlayer_MPM extends RenderMPM implements SpecialRender
     }
 
     @Override
-    public void renderFirstPersonArm(EntityPlayer player)
-    {
+    public void renderFirstPersonArm(EntityPlayer player) {
         boolean smHeadwear = modelPlayer.bipedHeadwear.showModel;
         boolean smLeftLegwear = modelPlayer.bipedLeftLegwear.showModel;
         boolean smRightLegwear = modelPlayer.bipedRightLegwear.showModel;
@@ -147,10 +143,10 @@ public class SkinPortRenderPlayer_MPM extends RenderMPM implements SpecialRender
         int flags = getFlags(player);
         if (modelPlayer.bipedHeadwear.showModel)
             modelPlayer.bipedHeadwear.showModel = SkinCustomization.contains(flags, SkinCustomization.hat);
-        if (modelPlayer.bipedLeftLegwear.showModel)
-            modelPlayer.bipedLeftLegwear.showModel = SkinCustomization.contains(flags, SkinCustomization.left_pants_leg);
-        if (modelPlayer.bipedRightLegwear.showModel)
-            modelPlayer.bipedRightLegwear.showModel = SkinCustomization.contains(flags, SkinCustomization.right_pants_leg);
+        if (modelPlayer.bipedLeftLegwear.showModel) modelPlayer.bipedLeftLegwear.showModel = SkinCustomization
+            .contains(flags, SkinCustomization.left_pants_leg);
+        if (modelPlayer.bipedRightLegwear.showModel) modelPlayer.bipedRightLegwear.showModel = SkinCustomization
+            .contains(flags, SkinCustomization.right_pants_leg);
         if (modelPlayer.bipedLeftArmwear.showModel)
             modelPlayer.bipedLeftArmwear.showModel = SkinCustomization.contains(flags, SkinCustomization.left_sleeve);
         if (modelPlayer.bipedRightArmwear.showModel)

@@ -7,9 +7,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.WeakHashMap;
 
-import cpw.mods.fml.common.Loader;
-import lain.mods.skinport.impl.forge.compat.SkinPortRenderPlayer_MPM;
-import lain.mods.skinport.impl.forge.compat.SkinPortRenderPlayer_RPA;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.AbstractClientPlayer;
 import net.minecraft.client.gui.GuiButton;
@@ -31,6 +28,7 @@ import com.mojang.authlib.GameProfile;
 
 import cpw.mods.fml.client.FMLClientHandler;
 import cpw.mods.fml.client.registry.ClientRegistry;
+import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
 import cpw.mods.fml.common.network.FMLNetworkEvent.ClientDisconnectionFromServerEvent;
@@ -42,6 +40,8 @@ import lain.mods.skinport.impl.forge.SkinPortModelHumanoidHead;
 import lain.mods.skinport.impl.forge.SkinPortRenderPlayer;
 import lain.mods.skinport.impl.forge.SpecialModel;
 import lain.mods.skinport.impl.forge.SpecialRenderer;
+import lain.mods.skinport.impl.forge.compat.SkinPortRenderPlayer_MPM;
+import lain.mods.skinport.impl.forge.compat.SkinPortRenderPlayer_RPA;
 import lain.mods.skins.api.SkinProviderAPI;
 import lain.mods.skins.api.interfaces.ISkin;
 import lain.mods.skins.impl.PlayerProfile;
@@ -181,14 +181,11 @@ public class ClientProxy extends CommonProxy {
         {
             renderers.put("default", new SkinPortRenderPlayer_MPM(manager, false));
             renderers.put("slim", new SkinPortRenderPlayer_MPM(manager, true));
-        }
-        else if (Loader.isModLoaded("RenderPlayerAPI")) // Compatibility with RenderPlayerAPI
+        } else if (Loader.isModLoaded("RenderPlayerAPI")) // Compatibility with RenderPlayerAPI
         {
             renderers.put("default", new SkinPortRenderPlayer_RPA(manager, false));
             renderers.put("slim", new SkinPortRenderPlayer_RPA(manager, true));
-        }
-        else
-        {
+        } else {
             renderers.put("default", new SkinPortRenderPlayer(manager, false));
             renderers.put("slim", new SkinPortRenderPlayer(manager, true));
         }
