@@ -13,54 +13,89 @@ import java.util.function.Function;
 
 import javax.imageio.ImageIO;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.mojang.authlib.minecraft.MinecraftProfileTexture;
 
 import lain.mods.skins.api.interfaces.ISkin;
 
 public class SkinData implements ISkin {
 
+    private static final Logger LOGGER = LogManager.getLogger("SkinPort/SkinData");
+
+    private static final String SKIN_TYPE_DEFAULT = "default";
+    private static final String SKIN_TYPE_SLIM = "slim";
+    private static final String SKIN_TYPE_UNKNOWN = "unknown";
+    private static final int ALPHA_SHIFT = 24;
+    private static final int ALPHA_MASK = 0xFF000000;
+    private static final int SLIM_CHECK_X = 55;
+    private static final int SLIM_CHECK_Y = 20;
+    private static final int TEXTURE_SIZE_64 = 64;
+
     public static String getSkinType(MinecraftProfileTexture tex) {
         String model = tex.getMetadata("model");
-        if (model == null) {
-            return "default";
-        }
-        return model;
+        String skinType = model != null ? model : SKIN_TYPE_DEFAULT;
+        LOGGER.debug("Skin type from authlib metadata: {}", skinType);
+        return skinType;
     }
 
     public static String judgeSkinType(byte[] data) {
+        LOGGER.debug("Judging skin type from byte array (length: {})", data != null ? data.length : 0);
         try (InputStream input = new ByteArrayInputStream(data)) {
-            BufferedImage image = ImageIO.read(input);
-            int w = image.getWidth();
-            int h = image.getHeight();
-            if (w == h * 2) return "default"; // it's actually "legacy", but there will always be a filter to convert
-                                              // them into "default".
-            if (w == h) {
-                int r = Math.max(w / 64, 1);
-                if (((image.getRGB(55 * r, 20 * r) & 0xFF000000) >>> 24) == 0) return "slim";
-                return "default";
-            }
-            return "unknown";
+            String type = judgeSkinTypeFromImage(ImageIO.read(input));
+            LOGGER.debug("Judged skin type: {}", type);
+            return type;
         } catch (Throwable t) {
-            return "unknown";
+            LOGGER.warn("Failed to judge skin type from byte array", t);
+            return SKIN_TYPE_UNKNOWN;
         }
     }
 
     public static String judgeSkinType(ByteBuffer data) {
+        LOGGER.debug("Judging skin type from ByteBuffer (capacity: {})", data != null ? data.capacity() : 0);
         try (InputStream input = wrapByteBufferAsInputStream(data)) {
-            BufferedImage image = ImageIO.read(input);
-            int w = image.getWidth();
-            int h = image.getHeight();
-            if (w == h * 2) return "default"; // it's actually "legacy", but there will always be a filter to convert
-                                              // them into "default".
-            if (w == h) {
-                int r = Math.max(w / 64, 1);
-                if (((image.getRGB(55 * r, 20 * r) & 0xFF000000) >>> 24) == 0) return "slim";
-                return "default";
-            }
-            return "unknown";
+            String type = judgeSkinTypeFromImage(ImageIO.read(input));
+            LOGGER.debug("Judged skin type: {}", type);
+            return type;
         } catch (Throwable t) {
-            return "unknown";
+            LOGGER.warn("Failed to judge skin type from ByteBuffer", t);
+            return SKIN_TYPE_UNKNOWN;
         }
+    }
+
+    private static String judgeSkinTypeFromImage(BufferedImage image) {
+        if (image == null) {
+            LOGGER.warn("Cannot judge skin type: image is null");
+            return SKIN_TYPE_UNKNOWN;
+        }
+
+        int width = image.getWidth();
+        int height = image.getHeight();
+
+        LOGGER.debug("Analyzing skin image: {}x{}", width, height);
+
+        // Legacy format (64x32) - will be converted to default by filter
+        if (width == height * 2) {
+            LOGGER.debug("Detected legacy skin format (64x32)");
+            return SKIN_TYPE_DEFAULT;
+        }
+
+        // Modern format (64x64)
+        if (width == height) {
+            int scale = Math.max(width / TEXTURE_SIZE_64, 1);
+            int checkX = SLIM_CHECK_X * scale;
+            int checkY = SLIM_CHECK_Y * scale;
+
+            // Check if the pixel at the slim arm position is transparent
+            int alpha = (image.getRGB(checkX, checkY) & ALPHA_MASK) >>> ALPHA_SHIFT;
+            String type = alpha == 0 ? SKIN_TYPE_SLIM : SKIN_TYPE_DEFAULT;
+            LOGGER.debug("Detected modern skin format: {} (alpha at [{},{}] = {})", type, checkX, checkY, alpha);
+            return type;
+        }
+
+        LOGGER.warn("Unknown skin format: {}x{}", width, height);
+        return SKIN_TYPE_UNKNOWN;
     }
 
     public static ByteBuffer toBuffer(byte[] data) {
@@ -72,9 +107,13 @@ public class SkinData implements ISkin {
     }
 
     public static boolean validateData(byte[] data) {
+        LOGGER.debug("Validating skin data (length: {})", data != null ? data.length : 0);
         try (InputStream input = new ByteArrayInputStream(data)) {
-            return ImageIO.read(input) != null;
+            boolean valid = ImageIO.read(input) != null;
+            LOGGER.debug("Skin data validation result: {}", valid);
+            return valid;
         } catch (Throwable t) {
+            LOGGER.warn("Skin data validation failed", t);
             return false;
         }
     }
@@ -129,26 +168,45 @@ public class SkinData implements ISkin {
     }
 
     public synchronized void put(byte[] data, String type) {
+        LOGGER.debug("Putting skin data: type={}, dataLength={}", type, data != null ? data.length : 0);
+
         ByteBuffer buf = null;
         if (data != null) {
             buf = toBuffer(data);
-            for (Function<ByteBuffer, ByteBuffer> filter : filters) if ((buf = filter.apply(buf)) == null) break;
+            LOGGER.debug("Converted to ByteBuffer, applying {} filters", filters.size());
+
+            for (Function<ByteBuffer, ByteBuffer> filter : filters) {
+                buf = filter.apply(buf);
+                if (buf == null) {
+                    LOGGER.warn("Filter returned null, stopping filter chain");
+                    break;
+                }
+            }
         }
 
         this.data = buf;
         this.type = type;
+        LOGGER.debug("Skin data stored successfully: type={}, hasData={}", type, buf != null);
     }
 
     @Override
     public boolean setRemovalListener(Consumer<ISkin> listener) {
-        if (listener == null || listeners.contains(listener)) return false;
-        return listeners.add(listener);
+        if (listener == null || listeners.contains(listener)) {
+            return false;
+        }
+        boolean added = listeners.add(listener);
+        LOGGER.debug("Removal listener added: {}", added);
+        return added;
     }
 
     @Override
     public boolean setSkinFilter(Function<ByteBuffer, ByteBuffer> filter) {
-        if (filter == null || filters.contains(filter)) return false;
-        return filters.add(filter);
+        if (filter == null || filters.contains(filter)) {
+            return false;
+        }
+        boolean added = filters.add(filter);
+        LOGGER.debug("Skin filter added: {}", added);
+        return added;
     }
 
 }

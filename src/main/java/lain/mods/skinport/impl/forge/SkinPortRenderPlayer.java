@@ -33,15 +33,60 @@ public class SkinPortRenderPlayer extends RenderPlayer {
     @Override
     public void doRender(AbstractClientPlayer p_76986_1_, double p_76986_2_, double p_76986_4_, double p_76986_6_,
         float p_76986_8_, float p_76986_9_) {
-        boolean smHeadwear = modelPlayer.bipedHeadwear.showModel;
-        boolean smLeftLegwear = modelPlayer.bipedLeftLegwear.showModel;
-        boolean smRightLegwear = modelPlayer.bipedRightLegwear.showModel;
-        boolean smLeftArmwear = modelPlayer.bipedLeftArmwear.showModel;
-        boolean smRightArmwear = modelPlayer.bipedRightArmwear.showModel;
-        boolean smBodyWear = modelPlayer.bipedBodyWear.showModel;
-        boolean smCloak = modelPlayer.bipedCloak.showModel;
+        applyCustomizationFlags(
+            p_76986_1_,
+            () -> super.doRender(p_76986_1_, p_76986_2_, p_76986_4_, p_76986_6_, p_76986_8_, p_76986_9_));
+    }
 
-        int flags = getFlags(p_76986_1_);
+    @Override
+    protected void renderEquippedItems(AbstractClientPlayer p_77029_1_, float p_77029_2_) {
+        applyCustomizationFlags(p_77029_1_, () -> super.renderEquippedItems(p_77029_1_, p_77029_2_));
+    }
+
+    @Override
+    public void renderFirstPersonArm(EntityPlayer player) {
+        applyCustomizationFlags(player, () -> {
+            modelPlayer.isRiding = modelPlayer.isSneak = false;
+            super.renderFirstPersonArm(player);
+        });
+    }
+
+    /**
+     * Applies skin customization flags to the model, executes the rendering action, then restores original state.
+     */
+    private void applyCustomizationFlags(EntityPlayer player, Runnable renderAction) {
+        ModelVisibilityState state = saveModelVisibility();
+
+        int flags = getFlags(player);
+        applyFlagsToModel(flags);
+
+        renderAction.run();
+
+        restoreModelVisibility(state);
+    }
+
+    private ModelVisibilityState saveModelVisibility() {
+        return new ModelVisibilityState(
+            modelPlayer.bipedHeadwear.showModel,
+            modelPlayer.bipedLeftLegwear.showModel,
+            modelPlayer.bipedRightLegwear.showModel,
+            modelPlayer.bipedLeftArmwear.showModel,
+            modelPlayer.bipedRightArmwear.showModel,
+            modelPlayer.bipedBodyWear.showModel,
+            modelPlayer.bipedCloak.showModel);
+    }
+
+    private void restoreModelVisibility(ModelVisibilityState state) {
+        modelPlayer.bipedHeadwear.showModel = state.headwear;
+        modelPlayer.bipedLeftLegwear.showModel = state.leftLegwear;
+        modelPlayer.bipedRightLegwear.showModel = state.rightLegwear;
+        modelPlayer.bipedLeftArmwear.showModel = state.leftArmwear;
+        modelPlayer.bipedRightArmwear.showModel = state.rightArmwear;
+        modelPlayer.bipedBodyWear.showModel = state.bodyWear;
+        modelPlayer.bipedCloak.showModel = state.cloak;
+    }
+
+    private void applyFlagsToModel(int flags) {
         if (modelPlayer.bipedHeadwear.showModel)
             modelPlayer.bipedHeadwear.showModel = SkinCustomization.contains(flags, SkinCustomization.hat);
         if (modelPlayer.bipedLeftLegwear.showModel) modelPlayer.bipedLeftLegwear.showModel = SkinCustomization
@@ -56,16 +101,6 @@ public class SkinPortRenderPlayer extends RenderPlayer {
             modelPlayer.bipedBodyWear.showModel = SkinCustomization.contains(flags, SkinCustomization.jacket);
         if (modelPlayer.bipedCloak.showModel)
             modelPlayer.bipedCloak.showModel = SkinCustomization.contains(flags, SkinCustomization.cape);
-
-        super.doRender(p_76986_1_, p_76986_2_, p_76986_4_, p_76986_6_, p_76986_8_, p_76986_9_);
-
-        modelPlayer.bipedHeadwear.showModel = smHeadwear;
-        modelPlayer.bipedLeftLegwear.showModel = smLeftLegwear;
-        modelPlayer.bipedRightLegwear.showModel = smRightLegwear;
-        modelPlayer.bipedLeftArmwear.showModel = smLeftArmwear;
-        modelPlayer.bipedRightArmwear.showModel = smRightArmwear;
-        modelPlayer.bipedBodyWear.showModel = smBodyWear;
-        modelPlayer.bipedCloak.showModel = smCloak;
     }
 
     private int getFlags(EntityPlayer player) {
@@ -82,79 +117,29 @@ public class SkinPortRenderPlayer extends RenderPlayer {
         return flags;
     }
 
-    @Override
-    protected void renderEquippedItems(AbstractClientPlayer p_77029_1_, float p_77029_2_) {
-        boolean smHeadwear = modelPlayer.bipedHeadwear.showModel;
-        boolean smLeftLegwear = modelPlayer.bipedLeftLegwear.showModel;
-        boolean smRightLegwear = modelPlayer.bipedRightLegwear.showModel;
-        boolean smLeftArmwear = modelPlayer.bipedLeftArmwear.showModel;
-        boolean smRightArmwear = modelPlayer.bipedRightArmwear.showModel;
-        boolean smBodyWear = modelPlayer.bipedBodyWear.showModel;
-        boolean smCloak = modelPlayer.bipedCloak.showModel;
+    /**
+     * Immutable holder for model visibility state.
+     */
+    private static class ModelVisibilityState {
 
-        int flags = getFlags(p_77029_1_);
-        if (modelPlayer.bipedHeadwear.showModel)
-            modelPlayer.bipedHeadwear.showModel = SkinCustomization.contains(flags, SkinCustomization.hat);
-        if (modelPlayer.bipedLeftLegwear.showModel) modelPlayer.bipedLeftLegwear.showModel = SkinCustomization
-            .contains(flags, SkinCustomization.left_pants_leg);
-        if (modelPlayer.bipedRightLegwear.showModel) modelPlayer.bipedRightLegwear.showModel = SkinCustomization
-            .contains(flags, SkinCustomization.right_pants_leg);
-        if (modelPlayer.bipedLeftArmwear.showModel)
-            modelPlayer.bipedLeftArmwear.showModel = SkinCustomization.contains(flags, SkinCustomization.left_sleeve);
-        if (modelPlayer.bipedRightArmwear.showModel)
-            modelPlayer.bipedRightArmwear.showModel = SkinCustomization.contains(flags, SkinCustomization.right_sleeve);
-        if (modelPlayer.bipedBodyWear.showModel)
-            modelPlayer.bipedBodyWear.showModel = SkinCustomization.contains(flags, SkinCustomization.jacket);
-        if (modelPlayer.bipedCloak.showModel)
-            modelPlayer.bipedCloak.showModel = SkinCustomization.contains(flags, SkinCustomization.cape);
+        final boolean headwear;
+        final boolean leftLegwear;
+        final boolean rightLegwear;
+        final boolean leftArmwear;
+        final boolean rightArmwear;
+        final boolean bodyWear;
+        final boolean cloak;
 
-        super.renderEquippedItems(p_77029_1_, p_77029_2_);
-
-        modelPlayer.bipedHeadwear.showModel = smHeadwear;
-        modelPlayer.bipedLeftLegwear.showModel = smLeftLegwear;
-        modelPlayer.bipedRightLegwear.showModel = smRightLegwear;
-        modelPlayer.bipedLeftArmwear.showModel = smLeftArmwear;
-        modelPlayer.bipedRightArmwear.showModel = smRightArmwear;
-        modelPlayer.bipedBodyWear.showModel = smBodyWear;
-        modelPlayer.bipedCloak.showModel = smCloak;
-    }
-
-    @Override
-    public void renderFirstPersonArm(EntityPlayer player) {
-        boolean smHeadwear = modelPlayer.bipedHeadwear.showModel;
-        boolean smLeftLegwear = modelPlayer.bipedLeftLegwear.showModel;
-        boolean smRightLegwear = modelPlayer.bipedRightLegwear.showModel;
-        boolean smLeftArmwear = modelPlayer.bipedLeftArmwear.showModel;
-        boolean smRightArmwear = modelPlayer.bipedRightArmwear.showModel;
-        boolean smBodyWear = modelPlayer.bipedBodyWear.showModel;
-        boolean smCloak = modelPlayer.bipedCloak.showModel;
-
-        int flags = getFlags(player);
-        if (modelPlayer.bipedHeadwear.showModel)
-            modelPlayer.bipedHeadwear.showModel = SkinCustomization.contains(flags, SkinCustomization.hat);
-        if (modelPlayer.bipedLeftLegwear.showModel) modelPlayer.bipedLeftLegwear.showModel = SkinCustomization
-            .contains(flags, SkinCustomization.left_pants_leg);
-        if (modelPlayer.bipedRightLegwear.showModel) modelPlayer.bipedRightLegwear.showModel = SkinCustomization
-            .contains(flags, SkinCustomization.right_pants_leg);
-        if (modelPlayer.bipedLeftArmwear.showModel)
-            modelPlayer.bipedLeftArmwear.showModel = SkinCustomization.contains(flags, SkinCustomization.left_sleeve);
-        if (modelPlayer.bipedRightArmwear.showModel)
-            modelPlayer.bipedRightArmwear.showModel = SkinCustomization.contains(flags, SkinCustomization.right_sleeve);
-        if (modelPlayer.bipedBodyWear.showModel)
-            modelPlayer.bipedBodyWear.showModel = SkinCustomization.contains(flags, SkinCustomization.jacket);
-        if (modelPlayer.bipedCloak.showModel)
-            modelPlayer.bipedCloak.showModel = SkinCustomization.contains(flags, SkinCustomization.cape);
-
-        modelPlayer.isRiding = modelPlayer.isSneak = false;
-        super.renderFirstPersonArm(player);
-
-        modelPlayer.bipedHeadwear.showModel = smHeadwear;
-        modelPlayer.bipedLeftLegwear.showModel = smLeftLegwear;
-        modelPlayer.bipedRightLegwear.showModel = smRightLegwear;
-        modelPlayer.bipedLeftArmwear.showModel = smLeftArmwear;
-        modelPlayer.bipedRightArmwear.showModel = smRightArmwear;
-        modelPlayer.bipedBodyWear.showModel = smBodyWear;
-        modelPlayer.bipedCloak.showModel = smCloak;
+        ModelVisibilityState(boolean headwear, boolean leftLegwear, boolean rightLegwear, boolean leftArmwear,
+            boolean rightArmwear, boolean bodyWear, boolean cloak) {
+            this.headwear = headwear;
+            this.leftLegwear = leftLegwear;
+            this.rightLegwear = rightLegwear;
+            this.leftArmwear = leftArmwear;
+            this.rightArmwear = rightArmwear;
+            this.bodyWear = bodyWear;
+            this.cloak = cloak;
+        }
     }
 
 }

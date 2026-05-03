@@ -24,6 +24,9 @@ import net.minecraft.tileentity.TileEntitySkull;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.World;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.mojang.authlib.GameProfile;
 
 import cpw.mods.fml.client.FMLClientHandler;
@@ -50,26 +53,36 @@ import lain.mods.skins.impl.forge.CustomSkinTexture;
 @SideOnly(Side.CLIENT)
 public class ClientProxy extends CommonProxy {
 
+    private static final Logger LOGGER = LogManager.getLogger("SkinPort/ClientProxy");
+
     private static final Map<String, Render> renderers = new HashMap<>();
     private static final Map<ByteBuffer, CustomSkinTexture> textures = new WeakHashMap<>();
     private static final SkinPortModelHumanoidHead modelHumanoidHead = new SkinPortModelHumanoidHead();
 
     public static ResourceLocation bindTexture(GameProfile profile, ResourceLocation result) {
         if (profile != null) {
+            LOGGER.debug("Binding texture for profile: {}", profile.getName());
             ISkin skin = SkinProviderAPI.SKIN.getSkin(PlayerProfile.wrapGameProfile(profile));
-            if (skin != null && skin.isDataReady()) return ClientProxy.getOrCreateTexture(skin.getData(), skin)
-                .getLocation();
+            if (skin != null && skin.isDataReady()) {
+                ResourceLocation location = ClientProxy.getOrCreateTexture(skin.getData(), skin)
+                    .getLocation();
+                LOGGER.debug("Bound texture for {}: {}", profile.getName(), location);
+                return location;
+            }
+            LOGGER.debug("No skin data ready for {}", profile.getName());
         }
         return null;
     }
 
     public static ResourceLocation generateRandomLocation() {
-        return new ResourceLocation(
+        ResourceLocation location = new ResourceLocation(
             "skinport",
             String.format(
                 "textures/generated/%s",
                 UUID.randomUUID()
                     .toString()));
+        LOGGER.debug("Generated random texture location: {}", location);
+        return location;
     }
 
     public static ModelSkeletonHead getHumanoidHead(ResourceLocation location, ModelSkeletonHead result) {
@@ -82,31 +95,46 @@ public class ClientProxy extends CommonProxy {
     }
 
     public static ResourceLocation getLocationCape(AbstractClientPlayer player, ResourceLocation result) {
+        LOGGER.debug("Getting cape location for player: {}", player.getCommandSenderName());
         ISkin skin = SkinProviderAPI.CAPE.getSkin(PlayerProfile.wrapGameProfile(player.getGameProfile()));
-        if (skin != null && skin.isDataReady()) return ClientProxy.getOrCreateTexture(skin.getData(), skin)
-            .getLocation();
+        if (skin != null && skin.isDataReady()) {
+            ResourceLocation location = ClientProxy.getOrCreateTexture(skin.getData(), skin)
+                .getLocation();
+            LOGGER.debug("Cape location for {}: {}", player.getCommandSenderName(), location);
+            return location;
+        }
+        LOGGER.debug("No cape data ready for {}", player.getCommandSenderName());
         return null;
     }
 
     public static ResourceLocation getLocationSkin(AbstractClientPlayer player, ResourceLocation result) {
+        LOGGER.debug("Getting skin location for player: {}", player.getCommandSenderName());
         ISkin skin = SkinProviderAPI.SKIN.getSkin(PlayerProfile.wrapGameProfile(player.getGameProfile()));
-        if (skin != null && skin.isDataReady()) return ClientProxy.getOrCreateTexture(skin.getData(), skin)
-            .getLocation();
+        if (skin != null && skin.isDataReady()) {
+            ResourceLocation location = ClientProxy.getOrCreateTexture(skin.getData(), skin)
+                .getLocation();
+            LOGGER.debug("Skin location for {}: {}", player.getCommandSenderName(), location);
+            return location;
+        }
+        LOGGER.debug("No skin data ready for {}", player.getCommandSenderName());
         return null;
     }
 
     public static CustomSkinTexture getOrCreateTexture(ByteBuffer data, ISkin skin) {
         if (!textures.containsKey(data)) {
+            LOGGER.debug("Creating new texture for skin data");
             CustomSkinTexture texture = new CustomSkinTexture(generateRandomLocation(), data);
             FMLClientHandler.instance()
                 .getClient()
                 .getTextureManager()
                 .loadTexture(texture.getLocation(), texture);
             textures.put(data, texture);
+            LOGGER.debug("Texture created and loaded: {}", texture.getLocation());
 
             if (skin != null) {
                 skin.setRemovalListener(s -> {
                     if (data == s.getData()) {
+                        LOGGER.debug("Skin removal listener triggered for texture: {}", texture.getLocation());
                         // addScheduledTask
                         FMLClientHandler.instance()
                             .getClient()
@@ -116,6 +144,7 @@ public class ClientProxy extends CommonProxy {
                                     .getTextureManager()
                                     .deleteTexture(texture.getLocation());
                                 textures.remove(data);
+                                LOGGER.debug("Texture deleted: {}", texture.getLocation());
                             });
                     }
                 });
@@ -125,8 +154,18 @@ public class ClientProxy extends CommonProxy {
     }
 
     public static Render getPlayerRenderer(RenderManager manager, AbstractClientPlayer player, Render result) {
-        if (renderers.isEmpty()) setupRenderers(manager);
-        result = renderers.getOrDefault(getSkinType(player), result);
+        if (renderers.isEmpty()) {
+            LOGGER.debug("Renderers not initialized, setting up");
+            setupRenderers(manager);
+        }
+        String skinType = getSkinType(player);
+        result = renderers.getOrDefault(skinType, result);
+        LOGGER.debug(
+            "Selected renderer for {} with skin type {}: {}",
+            player.getCommandSenderName(),
+            skinType,
+            result.getClass()
+                .getSimpleName());
         if (result instanceof SpecialRenderer) ((SpecialRenderer) result).onGetRenderer(manager, player);
         return result;
     }
@@ -135,8 +174,13 @@ public class ClientProxy extends CommonProxy {
         ResourceLocation location = getLocationSkin(player, null);
         if (location != null) {
             ISkin skin = SkinProviderAPI.SKIN.getSkin(PlayerProfile.wrapGameProfile(player.getGameProfile()));
-            if (skin != null && skin.isDataReady()) return skin.getSkinType();
+            if (skin != null && skin.isDataReady()) {
+                String skinType = skin.getSkinType();
+                LOGGER.debug("Skin type for {}: {}", player.getCommandSenderName(), skinType);
+                return skinType;
+            }
         }
+        LOGGER.debug("Using default skin type for {}", player.getCommandSenderName());
         return "default";
     }
 
@@ -177,18 +221,23 @@ public class ClientProxy extends CommonProxy {
     }
 
     public static void setupRenderers(RenderManager manager) {
+        LOGGER.info("Setting up player renderers");
         if (Loader.isModLoaded("moreplayermodels")) // Compatibility with MorePlayerModels
         {
+            LOGGER.info("MorePlayerModels detected, using compatible renderers");
             renderers.put("default", new SkinPortRenderPlayer_MPM(manager, false));
             renderers.put("slim", new SkinPortRenderPlayer_MPM(manager, true));
         } else if (Loader.isModLoaded("RenderPlayerAPI")) // Compatibility with RenderPlayerAPI
         {
+            LOGGER.info("RenderPlayerAPI detected, using compatible renderers");
             renderers.put("default", new SkinPortRenderPlayer_RPA(manager, false));
             renderers.put("slim", new SkinPortRenderPlayer_RPA(manager, true));
         } else {
+            LOGGER.info("Using standard SkinPort renderers");
             renderers.put("default", new SkinPortRenderPlayer(manager, false));
             renderers.put("slim", new SkinPortRenderPlayer(manager, true));
         }
+        LOGGER.debug("Renderers setup complete: {}", renderers.keySet());
     }
 
     @SubscribeEvent
@@ -204,13 +253,17 @@ public class ClientProxy extends CommonProxy {
                 if (TileEntityRendererDispatcher.instance.getSpecialRendererByClass(TileEntitySkull.class)
                     .getClass() != TileEntitySkullRenderer.class) // Aggressively restore vanilla
                                                                   // TileEntitySkullRenderer
+                {
+                    LOGGER.debug("Restoring vanilla TileEntitySkullRenderer");
                     ClientRegistry.bindTileEntitySpecialRenderer(TileEntitySkull.class, new TileEntitySkullRenderer());
+                }
             }
         }
     }
 
     @SubscribeEvent
     public void handleEvent(ClientDisconnectionFromServerEvent event) {
+        LOGGER.info("Client disconnected from server, clearing skin customization flags");
         SkinCustomization.Flags.clear(Side.CLIENT);
     }
 

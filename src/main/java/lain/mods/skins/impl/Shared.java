@@ -22,6 +22,9 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -34,6 +37,15 @@ import lain.lib.SimpleDownloader;
 import lain.mods.skins.impl.forge.MinecraftUtils;
 
 public class Shared {
+
+    private static final Logger LOGGER = LogManager.getLogger("SkinPort/Shared");
+
+    private static final int CONNECT_TIMEOUT_MS = 10000;
+    private static final int READ_TIMEOUT_MS = 30000;
+    private static final int HTTP_CLIENT_ERROR_CLASS = 4;
+    private static final int HTTP_SUCCESS_CLASS = 2;
+    private static final int HTTP_CLASS_DIVISOR = 100;
+    private static final int MAX_DOWNLOAD_RETRIES = 2;
 
     private static interface SupplierBlocker<T> extends Supplier<T>, ForkJoinPool.ManagedBlocker {
     }
@@ -111,54 +123,78 @@ public class Shared {
     }
 
     public static CompletableFuture<Optional<byte[]>> downloadSkin(String resource, Executor executor) {
+        LOGGER.debug("Starting skin download from: {}", resource);
         return SimpleDownloader
             .start(
                 encodeURL(resource),
                 null,
                 MinecraftUtils.getProxy(),
-                2,
+                MAX_DOWNLOAD_RETRIES,
                 null,
                 executor,
                 null,
                 Shared::preConnect,
                 Shared::stopIfHttpClientError)
-            .thenApply(Shared::readAndDelete);
+            .thenApply(path -> {
+                Optional<byte[]> result = readAndDelete(path);
+                LOGGER.debug("Download completed: {} (hasData: {})", resource, result.isPresent());
+                return result;
+            })
+            .exceptionally(ex -> {
+                LOGGER.error("Failed to download skin from {}: {}", resource, ex.getMessage(), ex);
+                return Optional.empty();
+            });
     }
 
     private static String encodeURL(String url) {
         try {
-            return new URI(url).toASCIIString();
+            String encoded = new URI(url).toASCIIString();
+            LOGGER.debug("Encoded URL: {} -> {}", url, encoded);
+            return encoded;
         } catch (NullPointerException | URISyntaxException e) {
+            LOGGER.warn("Failed to encode URL: {}, using original", url);
             return url;
         }
     }
 
     public static boolean isBlank(CharSequence cs) {
-        int strLen;
-        if (cs == null || (strLen = cs.length()) == 0) return true;
-        for (int i = 0; i < strLen; i++) if (!Character.isWhitespace(cs.charAt(i))) return false;
+        if (cs == null || cs.length() == 0) {
+            return true;
+        }
+
+        for (int i = 0; i < cs.length(); i++) {
+            if (!Character.isWhitespace(cs.charAt(i))) {
+                return false;
+            }
+        }
         return true;
     }
 
     public static boolean isOfflinePlayer(UUID id, String name) {
-        if (id == null || isBlank(name)) // treat incomplete profiles as offline profiles, but don't cache results for
-                                         // them as they can be updated later and possibly become online profiles.
+        // Treat incomplete profiles as offline profiles, but don't cache results for
+        // them as they can be updated later and possibly become online profiles.
+        if (id == null || isBlank(name)) {
+            LOGGER.debug("Incomplete profile detected: id={}, name={}", id, name);
             return true;
+        }
+
         try {
-            return offlines.get(
-                id,
-                () -> {
-                    return UUID.nameUUIDFromBytes(("OfflinePlayer:" + name).getBytes(StandardCharsets.UTF_8))
-                        .equals(id);
-                });
+            boolean isOffline = offlines.get(id, () -> {
+                UUID offlineUuid = UUID.nameUUIDFromBytes(("OfflinePlayer:" + name).getBytes(StandardCharsets.UTF_8));
+                boolean matches = offlineUuid.equals(id);
+                LOGGER.debug("Checking if player {} ({}) is offline: {}", name, id, matches);
+                return matches;
+            });
+            return isOffline;
         } catch (Throwable t) {
+            LOGGER.warn("Error checking offline player status for {} ({})", name, id, t);
             return true;
         }
     }
 
     private static void preConnect(URLConnection conn) {
-        conn.setConnectTimeout(10000);
-        conn.setReadTimeout(30000);
+        conn.setConnectTimeout(CONNECT_TIMEOUT_MS);
+        conn.setReadTimeout(READ_TIMEOUT_MS);
         conn.setUseCaches(true);
         conn.setDoInput(true);
         conn.setDoOutput(false);
@@ -181,15 +217,23 @@ public class Shared {
             Thread.sleep(millis);
             return true;
         } catch (InterruptedException e) {
+            Thread.currentThread()
+                .interrupt();
             return false;
         }
     }
 
     private static boolean stopIfHttpClientError(URLConnection conn) {
-        if (conn instanceof HttpURLConnection) try {
-            if (((HttpURLConnection) conn).getResponseCode() / 100 == 4) return false;
-        } catch (IOException e) {
-            Retries.rethrow(e);
+        if (conn instanceof HttpURLConnection) {
+            try {
+                int responseCode = ((HttpURLConnection) conn).getResponseCode();
+                // Stop retrying on 4xx client errors
+                if (responseCode / HTTP_CLASS_DIVISOR == HTTP_CLIENT_ERROR_CLASS) {
+                    return false;
+                }
+            } catch (IOException e) {
+                Retries.rethrow(e);
+            }
         }
         return true;
     }

@@ -1,6 +1,6 @@
 package lain.mods.skinport.init.forge;
 
-import java.io.FileNotFoundException;
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
@@ -10,6 +10,8 @@ import net.minecraftforge.common.MinecraftForge;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.Mod;
@@ -33,30 +35,52 @@ import lain.mods.skins.providers.MojangSkinProvider;
 @Mod(modid = "skinport", useMetadata = true)
 public class ForgeSkinPort {
 
+    private static final Logger LOGGER = LogManager.getLogger("SkinPort");
+    private static final String OPTIONS_FILE = "options_skinport.txt";
+    private static final String CLIENT_FLAGS_KEY = "clientFlags";
+
     private static class DefaultSkinProvider implements ISkinProvider {
 
-        ISkin DefaultSteve;
-        ISkin DefaultAlex;
+        private static final int HASH_MASK = 0x1;
+
+        private final ISkin defaultSteve;
+        private final ISkin defaultAlex;
 
         DefaultSkinProvider() {
+            ISkin steve = null;
+            ISkin alex = null;
+
             try {
-                byte[] data;
-                ((SkinData) (DefaultSteve = new SkinData())).put(
-                    data = IOUtils.toByteArray(DefaultSkinProvider.class.getResource("/DefaultSteve.png")),
-                    "default");
-                ((SkinData) (DefaultAlex = new SkinData()))
-                    .put(data = IOUtils.toByteArray(DefaultSkinProvider.class.getResource("/DefaultAlex.png")), "slim");
+                LOGGER.debug("Loading default Steve skin");
+                byte[] steveData = IOUtils.toByteArray(DefaultSkinProvider.class.getResource("/DefaultSteve.png"));
+                SkinData steveSkin = new SkinData();
+                steveSkin.put(steveData, "default");
+                steve = steveSkin;
+                LOGGER.debug("Default Steve skin loaded successfully");
+
+                LOGGER.debug("Loading default Alex skin");
+                byte[] alexData = IOUtils.toByteArray(DefaultSkinProvider.class.getResource("/DefaultAlex.png"));
+                SkinData alexSkin = new SkinData();
+                alexSkin.put(alexData, "slim");
+                alex = alexSkin;
+                LOGGER.debug("Default Alex skin loaded successfully");
             } catch (IOException e) {
-                DefaultSteve = null;
-                DefaultAlex = null;
+                LOGGER.error("Failed to load default skins", e);
             }
+
+            this.defaultSteve = steve;
+            this.defaultAlex = alex;
         }
 
         @Override
         public ISkin getSkin(IPlayerProfile profile) {
-            UUID uuid;
-            if ((uuid = profile.getPlayerID()) != null && (uuid.hashCode() & 0x1) == 1) return DefaultAlex;
-            return DefaultSteve;
+            UUID uuid = profile.getPlayerID();
+            if (uuid != null && (uuid.hashCode() & HASH_MASK) == 1) {
+                LOGGER.debug("Using default Alex skin for player: {} (UUID: {})", profile.getPlayerName(), uuid);
+                return defaultAlex;
+            }
+            LOGGER.debug("Using default Steve skin for player: {} (UUID: {})", profile.getPlayerName(), uuid);
+            return defaultSteve;
         }
 
     }
@@ -69,56 +93,92 @@ public class ForgeSkinPort {
 
     public static void loadOptions() {
         try {
-            for (String line : FileUtils.readLines(
-                Paths.get(".", "options_skinport.txt")
-                    .toFile(),
-                StandardCharsets.UTF_8)) {
-                String[] as = line.split(":", 2);
-                if (as.length != 2 || as[0].startsWith("#")) continue;
-                if ("clientFlags".equals(as[0])) SkinCustomization.ClientFlags = Integer.parseInt(as[1]);
+            File optionsFile = Paths.get(".", OPTIONS_FILE)
+                .toFile();
+            LOGGER.debug("Loading options from: {}", optionsFile.getAbsolutePath());
+
+            if (!optionsFile.exists()) {
+                LOGGER.info("Options file does not exist, creating default options");
+                saveOptions();
+                return;
             }
-        } catch (FileNotFoundException | NumberFormatException e) {
+
+            for (String line : FileUtils.readLines(optionsFile, StandardCharsets.UTF_8)) {
+                String[] parts = line.split(":", 2);
+                if (parts.length != 2 || parts[0].startsWith("#")) {
+                    continue;
+                }
+                if (CLIENT_FLAGS_KEY.equals(parts[0])) {
+                    SkinCustomization.ClientFlags = Integer.parseInt(parts[1]);
+                    LOGGER.debug("Loaded client flags: {}", SkinCustomization.ClientFlags);
+                }
+            }
+            LOGGER.info("Options loaded successfully");
+        } catch (NumberFormatException e) {
+            LOGGER.warn("Invalid number format in options file, using defaults: {}", e.getMessage());
             saveOptions();
         } catch (IOException e) {
-            System.err.println(String.format("Error loading options: %s", e.getMessage()));
+            LOGGER.error("Error loading options from {}: {}", OPTIONS_FILE, e.getMessage(), e);
+            LOGGER.info("Creating default options file");
+            saveOptions();
         }
     }
 
     public static void saveOptions() {
         try {
+            File optionsFile = Paths.get(".", OPTIONS_FILE)
+                .toFile();
+            LOGGER.debug("Saving options to: {}", optionsFile.getAbsolutePath());
+
             FileUtils.write(
-                Paths.get(".", "options_skinport.txt")
-                    .toFile(),
-                String.format("clientFlags:%d", SkinCustomization.ClientFlags),
+                optionsFile,
+                String.format("%s:%d", CLIENT_FLAGS_KEY, SkinCustomization.ClientFlags),
                 StandardCharsets.UTF_8);
+            LOGGER.info("Options saved successfully");
         } catch (IOException e) {
-            System.err.println(String.format("Error saving options: %s", e.getMessage()));
+            LOGGER.error("Error saving options to {}: {}", OPTIONS_FILE, e.getMessage(), e);
         }
     }
 
     @Mod.EventHandler
     public void init(FMLPreInitializationEvent event) {
+        LOGGER.info("Initializing SkinPort mod");
+
         if (event.getSide()
             .isClient()) {
+            LOGGER.info("Client side initialization");
             loadOptions();
 
+            LOGGER.debug("Clearing existing skin providers");
             SkinProviderAPI.SKIN.clearProviders();
+
+            LOGGER.info("Registering MojangSkinProvider with legacy conversion filter");
             SkinProviderAPI.SKIN.registerProvider(new MojangSkinProvider().withFilter(LegacyConversion.createFilter()));
+
+            LOGGER.info("Registering DefaultSkinProvider");
             SkinProviderAPI.SKIN.registerProvider(new DefaultSkinProvider());
 
+            LOGGER.debug("Clearing existing cape providers");
             SkinProviderAPI.CAPE.clearProviders();
+
+            LOGGER.info("Registering MojangCapeProvider");
             SkinProviderAPI.CAPE.registerProvider(new MojangCapeProvider());
         }
 
+        LOGGER.debug("Registering network packets");
         network.registerPacket(1, PacketGet0.class);
         network.registerPacket(2, PacketPut0.class);
         network.registerPacket(3, PacketGet1.class);
         network.registerPacket(4, PacketPut1.class);
+        LOGGER.debug("Network packets registered");
 
+        LOGGER.debug("Registering event handlers");
         MinecraftForge.EVENT_BUS.register(proxy);
         FMLCommonHandler.instance()
             .bus()
             .register(proxy);
+
+        LOGGER.info("SkinPort mod initialization complete");
     }
 
 }
