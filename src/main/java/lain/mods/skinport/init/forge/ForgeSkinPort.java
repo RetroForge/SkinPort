@@ -2,6 +2,7 @@ package lain.mods.skinport.init.forge;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.UUID;
@@ -47,33 +48,33 @@ public class ForgeSkinPort {
         private final byte[] defaultAlex;
 
         DefaultSkinProvider() {
-            byte[] steve = null;
-            byte[] alex = null;
+            this.defaultSteve = loadDefaultSkin("/DefaultSteve.png");
+            this.defaultAlex = loadDefaultSkin("/DefaultAlex.png");
+        }
 
-            try {
-                LOGGER.debug("Loading default Steve skin");
-                steve = IOUtils.toByteArray(DefaultSkinProvider.class.getResource("/DefaultSteve.png"));
-                LOGGER.debug("Default Steve skin loaded successfully");
-
-                LOGGER.debug("Loading default Alex skin");
-                alex = IOUtils.toByteArray(DefaultSkinProvider.class.getResource("/DefaultAlex.png"));
-                LOGGER.debug("Default Alex skin loaded successfully");
-            } catch (IOException e) {
-                LOGGER.error("Failed to load default skins", e);
+        private static byte[] loadDefaultSkin(String resource) {
+            LOGGER.debug("Loading default skin: {}", resource);
+            URL url = DefaultSkinProvider.class.getResource(resource);
+            if (url == null) {
+                LOGGER.error("Default skin resource not found on classpath: {}", resource);
+                return null;
             }
-
-            this.defaultSteve = steve;
-            this.defaultAlex = alex;
+            try {
+                byte[] data = IOUtils.toByteArray(url);
+                LOGGER.debug("Default skin loaded successfully: {} ({} bytes)", resource, data.length);
+                return data;
+            } catch (IOException e) {
+                LOGGER.error("Failed to load default skin: {}", resource, e);
+                return null;
+            }
         }
 
         @Override
         public ISkin getSkin(IPlayerProfile profile) {
             UUID uuid = profile.getPlayerID();
             if (uuid != null && (uuid.hashCode() & HASH_MASK) == 1) {
-                LOGGER.debug("Using default Alex skin for player: {} (UUID: {})", profile.getPlayerName(), uuid);
                 return createSkin(defaultAlex, "slim");
             }
-            LOGGER.debug("Using default Steve skin for player: {} (UUID: {})", profile.getPlayerName(), uuid);
             return createSkin(defaultSteve, "default");
         }
 
