@@ -61,15 +61,12 @@ public class ClientProxy extends CommonProxy {
 
     public static ResourceLocation bindTexture(GameProfile profile, ResourceLocation result) {
         if (profile != null) {
-            LOGGER.debug("Binding texture for profile: {}", profile.getName());
             ISkin skin = SkinProviderAPI.SKIN.getSkin(PlayerProfile.wrapGameProfile(profile));
             if (skin != null && skin.isDataReady()) {
                 ResourceLocation location = ClientProxy.getOrCreateTexture(skin.getData(), skin)
                     .getLocation();
-                LOGGER.debug("Bound texture for {}: {}", profile.getName(), location);
                 return location;
             }
-            LOGGER.debug("No skin data ready for {}", profile.getName());
         }
         return null;
     }
@@ -95,28 +92,22 @@ public class ClientProxy extends CommonProxy {
     }
 
     public static ResourceLocation getLocationCape(AbstractClientPlayer player, ResourceLocation result) {
-        LOGGER.debug("Getting cape location for player: {}", player.getCommandSenderName());
         ISkin skin = SkinProviderAPI.CAPE.getSkin(PlayerProfile.wrapGameProfile(player.getGameProfile()));
         if (skin != null && skin.isDataReady()) {
             ResourceLocation location = ClientProxy.getOrCreateTexture(skin.getData(), skin)
                 .getLocation();
-            LOGGER.debug("Cape location for {}: {}", player.getCommandSenderName(), location);
             return location;
         }
-        LOGGER.debug("No cape data ready for {}", player.getCommandSenderName());
         return null;
     }
 
     public static ResourceLocation getLocationSkin(AbstractClientPlayer player, ResourceLocation result) {
-        LOGGER.debug("Getting skin location for player: {}", player.getCommandSenderName());
         ISkin skin = SkinProviderAPI.SKIN.getSkin(PlayerProfile.wrapGameProfile(player.getGameProfile()));
         if (skin != null && skin.isDataReady()) {
             ResourceLocation location = ClientProxy.getOrCreateTexture(skin.getData(), skin)
                 .getLocation();
-            LOGGER.debug("Skin location for {}: {}", player.getCommandSenderName(), location);
             return location;
         }
-        LOGGER.debug("No skin data ready for {}", player.getCommandSenderName());
         return null;
     }
 
@@ -160,12 +151,6 @@ public class ClientProxy extends CommonProxy {
         }
         String skinType = getSkinType(player);
         result = renderers.getOrDefault(skinType, result);
-        LOGGER.debug(
-            "Selected renderer for {} with skin type {}: {}",
-            player.getCommandSenderName(),
-            skinType,
-            result.getClass()
-                .getSimpleName());
         if (result instanceof SpecialRenderer) ((SpecialRenderer) result).onGetRenderer(manager, player);
         return result;
     }
@@ -175,12 +160,9 @@ public class ClientProxy extends CommonProxy {
         if (location != null) {
             ISkin skin = SkinProviderAPI.SKIN.getSkin(PlayerProfile.wrapGameProfile(player.getGameProfile()));
             if (skin != null && skin.isDataReady()) {
-                String skinType = skin.getSkinType();
-                LOGGER.debug("Skin type for {}: {}", player.getCommandSenderName(), skinType);
-                return skinType;
+                return skin.getSkinType();
             }
         }
-        LOGGER.debug("Using default skin type for {}", player.getCommandSenderName());
         return "default";
     }
 
